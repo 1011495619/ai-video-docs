@@ -18,6 +18,8 @@ mint broken-links
 
 ## 托管
 
-在 Mintlify 中连接 `1011495619/ai-video-docs`，发布分支选择 `main`，文档目录使用仓库根目录。推送到 `main` 后触发文档部署。
+已上线：[AI Video 文档](https://as-aed1f270.mintlify.site)。
 
-生成的站点地址填写到主系统「系统配置 → 基础信息 → 文档链接」。自定义域名在 Mintlify 控制台配置，并按提示添加 DNS 记录。
+Mintlify 已连接 `1011495619/ai-video-docs`，发布分支为 `main`，文档目录为仓库根目录。推送到 `main` 后自动构建发布。
+
+主系统「系统配置 → 基础信息 → 文档链接」填写 `https://as-aed1f270.mintlify.site`。自定义域名在 Mintlify 控制台配置，并按提示添加 DNS 记录。
