@@ -1,0 +1,89 @@
+---
+title: "扩展参数"
+description: "按模型目录声明传入 parameters 扩展字段。"
+---
+
+不同模型可能支持不同参数。请先调用 `/v1/catalog/models` 查看当前模型的 `tasks[].parameters`。
+
+如果模型返回：
+
+```json
+{
+  "name": "cameraLock",
+  "mapsTo": "camera_lock",
+  "label": "镜头锁定",
+  "type": "boolean"
+}
+```
+
+请求时传：
+
+```json
+{
+  "model": "sora-2",
+  "prompt": "一个人物走向镜头",
+  "parameters": {
+    "cameraLock": true
+  }
+}
+```
+
+注意：
+
+- `parameters` 只允许传当前模型声明过的公开参数。
+- 未声明参数会返回请求错误。
+- 字段类型、可选值、最大最小值以 `/v1/catalog/models` 返回为准。
+
+## 如何读取参数契约
+
+先选择对应 `tasks[].taskKind`，例如 `image.generate` 或 `video.generate`，再读取该任务的 `parameters` 和 `requestExample`。模型能力列表用于展示支持范围，任务参数契约用于构建具体请求；不要把另一个模型的参数原样复制过来。
+
+| 契约字段 | 用法 |
+| --- | --- |
+| `name` | 客户请求的公开字段名，填入 `parameters` |
+| `mapsTo` | 平台映射的目标字段，用于解释映射；客户端优先使用 `name` |
+| `label` / `description` | 用于参数输入界面的说明 |
+| `type` | 约定的数据类型 |
+| `required` | 是否必填 |
+| `options[].value` | 实际提交值；`label` 用于显示 |
+| `defaultValue` | 可用默认值说明，按模型契约处理 |
+| `min` / `max` / `step` | 数值范围和步长提示 |
+| `minItems` / `maxItems` | 列表长度范围 |
+
+例如目录声明下面的分辨率字段时：
+
+```json
+{
+  "name": "resolution",
+  "mapsTo": "resolution",
+  "label": "分辨率",
+  "type": "string",
+  "required": true,
+  "options": [
+    {"label": "高清", "value": "720p"},
+    {"label": "全高清", "value": "1080p"}
+  ]
+}
+```
+
+提交 `"720p"` 而不是显示文字 `"高清"`。稳定字段如 `resolution` 可按推荐 `requestExample` 放在顶层，自定义字段使用 `parameters`。同一参数只提供一个来源，避免顶层、别名与 `parameters` 发生冲突。
+
+## JSON 与 Form-Data
+
+JSON 布尔值使用 `true/false`，数值使用 number，列表使用 array，`parameters` 本身使用 object。不要把整个对象作为字符串塞进 JSON。
+
+视频 Form-Data 则需要把 `parameters` 对象序列化为 JSON 文本，例如在该模型已声明 `cameraLock` 时：
+
+```bash
+curl "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "model=YOUR_VIDEO_MODEL" \
+  -F "prompt=人物向镜头走来" \
+  -F 'parameters={"cameraLock":true}'
+```
+
+## 参数错误排查
+
+错误出现后先检查参数名是否属于当前任务、枚举的大小写、类型、必填项和列表数量。若目录刚更新，可重新获取目录后再检查。`parameters` 并不是任意厂商参数的透传入口，新增能力需要管理员先配置公开参数契约。
+
+图片单任务接口没有批量数量字段，批量图片请使用[图片兼容接口](/images/openai-compatible)的 `n`。更多字段说明见[图片请求](/images/create)和[视频请求](/videos/create)。

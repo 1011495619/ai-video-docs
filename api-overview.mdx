@@ -1,0 +1,65 @@
+---
+title: "接口总览"
+description: "按业务选择入口，区分任务对象、业务信封和厂商协议响应。"
+---
+
+所有路径均相对于系统的服务根地址，例如 `https://api.example.com/api`。OpenAI SDK 的 Base URL 使用该地址加 `/v1`，详见[快速开始](/quickstart)。
+
+## 选择接口
+
+| 需求 | 方法与路径 | 返回方式 | 详细说明 |
+| --- | --- | --- | --- |
+| 账户额度与限制 | `GET /v1/account` | `code/message/data` | [账户](/account) |
+| 图片、视频参数与价格 | `GET /v1/catalog/models` | `data.models` | [模型目录](/models) |
+| 对话模型列表 | `GET /v1/models` | 标准模型列表 | [模型与协议](/conversation/models-and-errors) |
+| 上传参考素材 | `POST /v1/files` | 文件对象 | [素材上传](/files/upload) |
+| 删除参考素材 | `DELETE /v1/files/{fileId}` | 文件删除结果 | [素材上传](/files/upload) |
+| 图片异步任务 | `POST /v1/images`、`GET /v1/images/{taskId}` | 任务对象 | [图片生成](/images/create) |
+| OpenAI 图片生成与编辑 | `POST /v1/images/generations`、`POST /v1/images/edits` | 等待后返回 `data[]` | [图片兼容接口](/images/openai-compatible) |
+| OpenAI 图片异步批次 | `POST /v1/images/generations/async`、`POST /v1/images/edits/async` | `202` + 批次对象 | [图片兼容接口](/images/openai-compatible) |
+| 图片批次查询 | `GET /v1/images/tasks/{taskId}` | 批次对象 | [图片兼容接口](/images/openai-compatible) |
+| 视频异步任务 | `POST /v1/videos`、`GET /v1/videos/{taskId}` | 任务对象 | [视频生成](/videos/create) |
+| Chat Completions | `POST /v1/chat/completions` | JSON / SSE | [Chat](/conversation/chat-completions) |
+| Responses | `POST /v1/responses` | JSON / SSE | [Responses](/conversation/responses) |
+| Anthropic Messages | `POST /v1/messages` | JSON / SSE | [Anthropic](/conversation/anthropic) |
+| Gemini 内容生成 | `POST /v1beta/models/{model}:generateContent` | JSON | [Gemini](/conversation/gemini) |
+
+具体模型支持的协议、媒体和参数取决于管理员配置及供应商能力。同一个公开模型名出现在目录中，也要检查目标操作是否支持。
+
+## 三类成功响应
+
+**业务信封**：账户和图片/视频模型目录从 `data` 读取业务内容；`requestId` 可用于定位请求。
+
+```json
+{
+  "code": 200,
+  "message": "查询成功",
+  "data": {"models": []},
+  "requestId": "req_0123456789abcdef0123456789abcdef"
+}
+```
+
+**任务对象**：`/v1/images`、`/v1/videos` 创建和查询结果直接位于顶层；创建成功 HTTP `200` 表示已接受任务。
+
+```json
+{
+  "id": "task_xxx",
+  "object": "image",
+  "model": "YOUR_IMAGE_MODEL",
+  "status": "queued",
+  "progress": 0,
+  "created_at": 1776843503
+}
+```
+
+**厂商协议**：对话及 OpenAI 图片兼容接口沿用相应协议的字段，例如 Chat 的 `choices`、Responses 的 `output`、Messages 的 `content`、Gemini 的 `candidates`、图片兼容接口的 `data`。解析前先确认调用路径，避免给所有接口统一套 `response.data.data`。
+
+## 通用约定
+
+- JSON 请求带 `Content-Type: application/json`；文件上传让客户端自动生成 multipart boundary。
+- 文档中的任务、文件时间戳 `created_at`、`completed_at`、`failed_at`、`expires_at` 使用 Unix 秒。Anthropic 模型列表的 `created_at` 使用 ISO 日期字符串。
+- 任务状态决定是否结束。HTTP `200` 的查询结果仍可能是 `failed`。
+- 任务 ID、文件 UUID、Responses ID、图片批次 ID各有用途，保存原始值并调用对应查询路径。
+- 对话流式响应按照 SSE 事件解析，网络数据块与完整事件边界并不一致。
+
+错误响应和重试决策见[错误处理](/errors)，异步任务实现见[Python 完整示例](/tasks/python-example)。

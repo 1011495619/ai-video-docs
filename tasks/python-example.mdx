@@ -1,0 +1,145 @@
+---
+title: "Python 完整任务流程"
+description: "创建一次图片或视频任务，保存 ID，并在总时限内轮询、处理限频和读取结果。"
+---
+
+此示例调用 `/v1/images` 或 `/v1/videos` 单任务接口。创建只提交一次；查询遇到临时故障时退避，任务失败或等待超时会明确报错。OpenAI 图片批次应使用其[批次查询协议](/images/openai-compatible)。
+
+## 准备
+
+安装 `requests`，并设置工作台地址、密钥和所选模型：
+
+```bash
+pip install requests
+export API_BASE_URL="https://api.example.com/api/v1"
+export PLATFORM_API_KEY="YOUR_API_KEY"
+export GENERATION_MODEL="YOUR_IMAGE_MODEL"
+export GENERATION_KIND="images"
+```
+
+视频将 `GENERATION_KIND` 设置为 `videos`，模型换成目录中的视频模型。首次运行只传模型和提示词；若目录要求额外字段，根据 `tasks[].requestExample` 补入 `payload`。
+
+## 完整代码
+
+保存为 `generate.py` 后运行 `python generate.py`。示例中的 15 分钟是客户端等待上限，可按业务调整。
+
+```python
+import json
+import os
+import random
+import time
+from urllib.parse import quote
+
+import requests
+
+BASE = os.environ["API_BASE_URL"].rstrip("/")
+KEY = os.environ["PLATFORM_API_KEY"]
+MODEL = os.environ["GENERATION_MODEL"]
+KIND = os.environ.get("GENERATION_KIND", "images")
+if KIND not in {"images", "videos"}:
+    raise ValueError("GENERATION_KIND must be images or videos")
+
+session = requests.Session()
+session.headers.update({"Authorization": f"Bearer {KEY}"})
+
+
+def result_urls(task):
+    result = task.get("result") or {}
+    if not isinstance(result, dict):
+        result = {}
+    candidates = [task.get("url"), task.get("video_url"),
+                  result.get("image_url"), result.get("video_url")]
+    for items in (task.get("images"), result.get("images")):
+        if isinstance(items, list):
+            candidates.extend(items)
+    urls = []
+    for item in candidates:
+        url = item.get("url") if isinstance(item, dict) else item
+        if isinstance(url, str) and url and url not in urls:
+            urls.append(url)
+    return urls
+
+
+def wait_for_task(task_id, max_wait=900):
+    deadline = time.monotonic() + max_wait
+    delay = 3.0
+    url = f"{BASE}/{KIND}/{quote(task_id, safe='')}"
+
+    def pause(seconds):
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            time.sleep(min(seconds, remaining))
+
+    while time.monotonic() < deadline:
+        remaining = deadline - time.monotonic()
+        try:
+            response = session.get(url, timeout=min(30, remaining))
+        except (requests.Timeout, requests.ConnectionError):
+            pause(delay + random.uniform(0, 1))
+            delay = min(delay * 2, 30)
+            continue
+
+        if response.status_code in {429, 502, 503, 504}:
+            retry = response.headers.get("Retry-After")
+            if retry is None:
+                try:
+                    retry = response.json().get("error", {}).get("retry_after")
+                except (ValueError, AttributeError):
+                    retry = None
+            try:
+                wait = max(delay, float(retry)) if retry is not None else delay
+            except (ValueError, TypeError):
+                wait = delay
+            pause(wait + random.uniform(0, 1))
+            delay = min(delay * 2, 30)
+            continue
+
+        if not response.ok:
+            raise RuntimeError(f"Query HTTP {response.status_code}: {response.text}")
+        task = response.json()
+        status = task.get("status")
+        print(f"{task_id}: {status}, progress={task.get('progress')}", flush=True)
+        if status == "completed":
+            urls = result_urls(task)
+            if not urls:
+                raise RuntimeError(f"Completed task has no URL: {task_id}; inspect task history")
+            return task, urls
+        if status == "failed":
+            raise RuntimeError(f"Task {task_id} failed: {task.get('error')}")
+        if status not in {"queued", "processing"}:
+            raise RuntimeError(f"Unexpected task status: {status}; task={task_id}")
+        delay = 3.0
+        pause(delay + random.uniform(0, 1))
+
+    raise TimeoutError(f"Stopped waiting; retain task ID {task_id} and query later")
+
+
+payload = {
+    "model": MODEL,
+    "prompt": "一张真实摄影风格的咖啡产品海报",
+    "metadata": {"order_id": "example_order_001"},
+}
+# Add fields from catalog tasks[].requestExample if this model requires them.
+if KIND == "videos":
+    payload["prompt"] = "咖啡杯旁升起热气，镜头缓慢向前推进"
+
+try:
+    created = session.post(f"{BASE}/{KIND}", json=payload, timeout=60)
+except (requests.Timeout, requests.ConnectionError) as exc:
+    raise RuntimeError("Create result unknown; check task history before submitting again") from exc
+if not created.ok:
+    raise RuntimeError(f"Create HTTP {created.status_code}: {created.text}")
+task_id = created.json()["id"]
+print(f"SAVE TASK ID: {task_id}", flush=True)  # Persist in your database in production.
+task, urls = wait_for_task(task_id)
+print(json.dumps({"id": task_id, "urls": urls, "usage": task.get("usage")},
+                 ensure_ascii=False, indent=2))
+```
+
+## 集成到业务服务
+
+把示例的打印改成数据库状态更新，任务 ID获取后立即保存，并使用队列或后台 worker 轮询。页面只读取业务服务提供的状态，密钥保留在后端。
+
+素材上传见[上传页面](/files/upload)。需要参考图时将上传响应的 `url` 放入 `payload["images"]`，并在生成结束、确认素材已无需使用后删除素材。输出 URL建议及时保存，若业务需要长期留存成品，可在你的存储中归档。
+
+该脚本没有真实模型默认值，也不会在文档检查时调用付费 API。运行前先用[模型目录](/models)确认模型参数与账户额度。

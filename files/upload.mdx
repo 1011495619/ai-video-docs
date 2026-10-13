@@ -1,0 +1,129 @@
+---
+title: "上传与删除素材"
+description: "将本地图片、视频和音频上传为可供生成任务引用的素材。"
+---
+
+本地图片、视频或音频可以先上传为长期素材，再将返回的 URL 用于图片或视频生成请求。
+
+上传接口要求 API Key 所属账户余额大于 0。余额不足时返回 `402`，服务端不会接收或保存文件；删除已有素材不受余额限制。
+
+接口：
+
+```text
+POST /v1/files
+```
+
+请求使用 `multipart/form-data`，文件字段名固定为 `file`：
+
+```bash
+curl -X POST "https://api.example.com/api/v1/files" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@/path/to/reference.mp4"
+```
+
+支持的类型和单文件大小限制：
+
+| 类型 | 支持格式                      | 大小限制                         |
+| ---- | ----------------------------- | -------------------------------- |
+| 图片 | JPG、PNG、GIF、WEBP           | 默认 5MB，以平台图片上传配置为准 |
+| 视频 | MP4、MPEG、MOV、WEBM、AVI     | 默认 500MB，以平台视频上传配置为准 |
+| 音频 | MP3、WAV、AAC、OGG、WEBM、M4A | 默认 100MB，以平台音频上传配置为准 |
+
+上传成功响应：
+
+```json
+{
+  "id": "01234567-89ab-4cde-8f01-23456789abcd",
+  "object": "file",
+  "type": "video",
+  "url": "https://cdn.example.com/long-term-assets/videos/video-xxx.mp4",
+  "mime_type": "video/mp4",
+  "size": 1234567,
+  "created_at": 1787616000
+}
+```
+
+将返回的 `url` 放入生成请求对应字段：
+
+```json
+{
+  "images": ["图片上传后返回的 URL"],
+  "videos": ["视频上传后返回的 URL"],
+  "audios": ["音频上传后返回的 URL"]
+}
+```
+
+不再使用的素材可以由原 API 客户删除：
+
+```bash
+curl -X DELETE "https://api.example.com/api/v1/files/01234567-89ab-4cde-8f01-23456789abcd" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+删除成功响应：
+
+```json
+{
+  "id": "01234567-89ab-4cde-8f01-23456789abcd",
+  "object": "file",
+  "deleted": true
+}
+```
+
+文件按 API Key 对应的用户归属。同一用户的其他 API Key 可以访问该用户上传的素材记录；其他用户不能删除该文件。
+
+## 文件字段
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` | 文件 UUID，用于删除素材；保存实际返回值 |
+| `type` | `image`、`video` 或 `audio` |
+| `url` | 生成请求引用的素材 URL；生成接口的媒体字段填 URL |
+| `mime_type` | 检查并保存的媒体 MIME |
+| `size` | 文件字节数 |
+| `created_at` | 上传时间，Unix 秒 |
+
+一次上传一个 `file`。素材类型依据媒体 MIME 和内容校验，单纯更换扩展名不能改变实际文件格式。使用 curl 的 `-F` 或 SDK 的 files 参数自动生成 multipart，请避免手工设置不带 boundary 的 Content-Type。
+
+## 查询当前上传限制
+
+服务根地址下的公开配置入口返回当前平台限制：
+
+```bash
+curl "https://api.example.com/api/system-config/public/upload-limits"
+```
+
+读取 `data.assetImage.maxSizeMb`、`data.assetVideo.maxSizeMb`、`data.assetAudio.maxSizeMb`。`/v1/files` 使用素材上传限制；视频创建接口直接上传 `input_reference` 时使用 `data.openApiImage` 的 API 图片配置。代理或网关也可能设有更低的请求体上限。
+
+## Python 上传后创建图片任务
+
+设置 `API_BASE_URL` 为含 `/v1` 的工作台地址，模型支持参考图时可使用：
+
+```python
+import os
+import requests
+
+base = os.environ["API_BASE_URL"].rstrip("/")
+headers = {"Authorization": f"Bearer {os.environ['PLATFORM_API_KEY']}"}
+with open("reference.png", "rb") as source:
+    uploaded = requests.post(
+        f"{base}/files", headers=headers,
+        files={"file": ("reference.png", source, "image/png")}, timeout=120,
+    )
+uploaded.raise_for_status()
+asset = uploaded.json()
+print("保存素材 ID:", asset["id"], "URL:", asset["url"])
+
+created = requests.post(
+    f"{base}/images", headers=headers,
+    json={
+        "model": os.environ["GENERATION_MODEL"],
+        "prompt": "保留主体，将背景换成摄影棚",
+        "images": [asset["url"]],
+    }, timeout=60,
+)
+created.raise_for_status()
+print("保存任务 ID:", created.json()["id"])
+```
+
+若模型还有必填参数，根据目录补入请求。得到任务 ID 后按[完整轮询示例](/tasks/python-example)获取结果。任务提交后要保留参考素材，等生成结束并确认后续无需复用时再删除；删除上传素材与删除生成成品是两种操作。

@@ -1,0 +1,141 @@
+---
+title: "快速开始"
+description: "创建密钥、配置 Base URL，检查账户并完成第一次对话或生成任务。"
+---
+
+## Base URL
+
+在系统的 API 工作台创建 API Key，复制工作台显示的接口地址。示例域名 `api.example.com` 和模型名仅作演示，请使用你所在站点的地址与模型目录返回的公开模型名。
+
+工作台和 OpenAI SDK 使用的 Base URL **包含 `/v1`**：
+
+```text
+https://api.example.com/api/v1
+```
+
+本文用 `API_BASE_URL` 表示这个地址。追加 `/models` 后得到 `https://api.example.com/api/v1/models`，请避免再次追加 `/v1`。
+
+文档中 `POST /v1/images` 等路径是相对于服务根地址的完整路径。线上服务根地址通常是 `https://api.example.com/api`，本地直连地址可能没有 `/api`；以工作台显示的地址为准。Anthropic、Gemini SDK 的版本前缀处理方式见 [SDK 示例](/conversation/sdk-examples)。文档网站域名用于阅读指南，API 请求仍发送到系统接口地址。
+
+## 1. 设置环境变量
+
+在自己的终端填写下面的值；后续命令复用同一组配置：
+
+```bash
+export API_BASE_URL="https://api.example.com/api/v1"
+export PLATFORM_API_KEY="YOUR_API_KEY"
+```
+
+## 2. 验证密钥与账户
+
+```bash
+curl --fail-with-body "$API_BASE_URL/account" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
+```
+
+成功响应包含 `code: 200` 和 `data.account_id`。返回 `401` 时先检查密钥、状态、有效期及所属站点。账户接口还提供每日额度和并发配置，字段见[账户与用量](/account)。生成任务和对话请求需要可用余额，查询成功本身并不表示余额充足。
+
+## 3. 获取可用模型
+
+<Tabs>
+  <Tab title="对话模型">
+```bash
+curl --fail-with-body "$API_BASE_URL/models" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
+```
+
+读取 `data[].id`，并检查 `supported_operations` 是否包含要使用的操作，例如 `chat` 或 `responses`。
+  </Tab>
+  <Tab title="图片与视频模型">
+```bash
+curl --fail-with-body "$API_BASE_URL/catalog/models" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
+```
+
+读取 `data.models[].id`，按 `type` 选择图片或视频模型，再查看 `tasks[].requestExample`、公开参数和能力列表。
+  </Tab>
+</Tabs>
+
+## 4. 完成一次对话
+
+把 `YOUR_CHAT_MODEL` 替换为上一步返回且支持 `chat` 的模型名：
+
+```bash
+curl --fail-with-body "$API_BASE_URL/chat/completions" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "YOUR_CHAT_MODEL",
+    "messages": [{"role": "user", "content": "用一句话介绍你自己"}],
+    "max_tokens": 256,
+    "stream": false
+  }'
+```
+
+读取 `choices[0].message.content`。部分模型使用 `max_completion_tokens`，请结合模型配置选择输出限制字段；[Chat Completions](/conversation/chat-completions) 有完整响应、多轮和流式示例。
+
+## Content-Type
+
+JSON 请求使用：
+
+```http
+Content-Type: application/json
+```
+
+视频接口如需上传本地参考图文件，也支持 `multipart/form-data`，字段名为 `input_reference`。
+
+## 接入建议
+
+1. 先调用 `/v1/catalog/models` 获取可用模型和参数。
+2. 请求包含本地素材时，先通过 `/v1/files` 上传并保存返回的 URL 和文件 ID。
+3. 创建任务后保存返回的任务 `id`。
+4. 使用对应类型的查询接口轮询：
+   - 视频：`GET /v1/videos/{taskId}`
+   - 图片：`GET /v1/images/{taskId}`
+5. 查询到 `status = completed` 后读取结果 URL。
+6. 查询到 `status = failed` 后读取 `error.message` 和 `error.code`。
+7. 不再使用的长期素材通过 `DELETE /v1/files/{fileId}` 删除。
+8. 查询请求遇到临时故障时可退避重试；创建请求超时先核对任务记录，避免重复提交和扣费。[Python 完整示例](/tasks/python-example) 实现了有时限的轮询。
+
+## 视频完整流程
+
+以下尺寸、时长、分辨率均需所选模型支持；首次调用建议从目录的 `requestExample` 开始。
+
+```bash
+# 1. 创建视频任务
+curl -X POST "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sora-2",
+    "prompt": "一只小猫在阳光下奔跑",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "seconds": "10"
+  }'
+
+# 2. 查询视频任务
+curl -X GET "https://api.example.com/api/v1/videos/task_xxx" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 图片完整流程
+
+```bash
+# 1. 创建图片任务
+curl -X POST "https://api.example.com/api/v1/images" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-image2",
+    "prompt": "一张未来城市夜景海报",
+    "aspect_ratio": "1:1",
+    "resolution": "1K"
+  }'
+
+# 2. 查询图片任务
+curl -X GET "https://api.example.com/api/v1/images/task_xxx" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+创建成功返回的是任务对象，保存其中的 `id` 替换示例中的 `task_xxx`。查询得到 `completed` 才读取图片 `url` 或视频 `video_url`；`failed` 是任务失败，需要检查 `error`。[接口总览](/api-overview) 说明不同接口的响应结构，[错误处理](/errors) 列出常见问题的定位步骤。

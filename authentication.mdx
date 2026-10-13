@@ -1,0 +1,61 @@
+---
+title: "鉴权"
+description: "使用平台 API Key 验证 API 请求。"
+---
+
+推荐使用 `Authorization: Bearer`：
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+也支持 `X-API-Key`：
+
+```http
+X-API-Key: YOUR_API_KEY
+```
+
+API Key 请妥善保管，不要放在前端页面、URL Query 或公开仓库中。
+
+## 创建与使用
+
+1. 使用已开通 API 功能的账户登录系统，在 API 工作台创建密钥。
+2. 保存创建时返回的完整密钥，将其配置到服务端环境变量 `PLATFORM_API_KEY`。
+3. 复制同一站点工作台提供的 Base URL，先查询 `/v1/account` 和模型列表验证接入。
+4. 更换密钥时先更新调用服务的配置并验证，再停用旧密钥。停用或删除后，旧密钥的生成请求会鉴权失败。
+
+API Key 与登录系统使用的会话 Token 是两种凭证。API 示例中的 Bearer 值应填写平台 API Key。租户账户应使用所属站点的接口地址，跨站点使用可能因租户校验失败而返回 `401`。
+
+## 协议兼容认证
+
+| 调用方式 | 推荐请求头 | 说明 |
+| --- | --- | --- |
+| OpenAI、图片、视频 | `Authorization: Bearer YOUR_API_KEY` | 通用方式 |
+| Anthropic SDK | `X-API-Key: YOUR_API_KEY` | 另带 `anthropic-version`，见 [Messages](/conversation/anthropic) |
+| Gemini SDK | `x-goog-api-key: YOUR_API_KEY` | 使用平台密钥，见 [Gemini](/conversation/gemini) |
+
+Gemini 模型入口兼容 `?key=`，但请求头能减少 URL 日志中记录密钥的机会。若同时提供多个凭证，平台依次使用 `X-API-Key`、`x-goog-api-key`、Bearer、Gemini Query Key；建议每个请求只提供一份密钥，避免旧请求头覆盖新凭证。
+
+## 请求频率与并发
+
+平台同时检查用户级和密钥级的每分钟请求限制。同一账户使用多个密钥仍共享用户级限制。模型查询、任务查询和素材上传也消耗请求频率额度，批量任务要控制整体轮询频率。
+
+通过频率校验的 HTTP 请求通常返回：
+
+```http
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1776843540
+```
+
+这些数字仅作示例。`Limit` 与 `Remaining` 描述当前密钥的分钟窗口，`Reset` 是窗口重置的 Unix 秒，并不展示用户级窗口剩余值。
+
+`429` 可能表示频率限制，也可能表示正在执行或等待的任务太多。频率限制时优先读取 `Retry-After` 响应头；图片/视频直接接口的限频错误还可能在 `error.retry_after` 返回等待秒数。并发限制时减少同时提交的任务，等待已有任务结束。完整判断流程见[错误处理](/errors)。
+
+## 鉴权故障检查
+
+- 检查完整密钥是否复制正确，Bearer 前缀后是否有一个空格。
+- 检查是否同时带了旧 `X-API-Key` 和新 Bearer。
+- 检查密钥是否激活、是否过期，以及账户 API 功能是否开通。
+- 检查 Base URL 是否来自密钥所属站点。
+- 检查反向代理是否传递了认证头；从自己的后端调用，避免直接向页面暴露密钥。

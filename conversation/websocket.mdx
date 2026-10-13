@@ -1,0 +1,71 @@
+---
+title: "WebSocket"
+description: "通过 WebSocket 使用 Responses 与 Realtime。"
+---
+
+Responses 使用 `GET /v1/responses` WebSocket，Realtime 使用 `GET /v1/realtime?model=YOUR_MODEL` WebSocket。浏览器不能设置 Authorization 时，可使用 `openai-insecure-api-key.YOUR_API_KEY` 子协议完成升级鉴权。连接具备心跳、背压、消息大小和时限控制；Realtime 支持 session、音频、工具调用、VAD 和多轮响应。
+
+## 连接地址和模型
+
+HTTP Base URL `https://api.example.com/api/v1` 对应 WebSocket 根地址 `wss://api.example.com/api/v1`。选择目录中支持对应操作及 `websocket` 传输的模型，并确认代理传递升级头。
+
+建议在后端使用能设置请求头的 WebSocket 客户端，API Key保留在服务端。浏览器连接通常需要业务后端中转，避免长期密钥暴露在用户页面。
+
+## Node.js Responses 示例
+
+安装 `ws`，设置 `API_BASE_URL`、`PLATFORM_API_KEY`、`CONVERSATION_MODEL`。下面代码保存为 `responses.mjs` 后运行 `node responses.mjs`：
+
+```javascript
+import WebSocket from "ws";
+
+const base = process.env.API_BASE_URL;
+const key = process.env.PLATFORM_API_KEY;
+const model = process.env.CONVERSATION_MODEL;
+if (!base || !key || !model) throw new Error("Set API_BASE_URL, PLATFORM_API_KEY, CONVERSATION_MODEL");
+const url = new URL(`${base.replace(/\/$/, "")}/responses`);
+url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+const socket = new WebSocket(url, { headers: { Authorization: `Bearer ${key}` } });
+let terminal = false;
+const timer = setTimeout(() => {
+  console.error("Waiting timed out; inspect the saved response ID and task history");
+  process.exitCode = 1;
+  socket.terminate();
+}, 120_000);
+
+socket.on("open", () => socket.send(JSON.stringify({
+  type: "response.create", model, input: "用一句话介绍异步任务", max_output_tokens: 256,
+})));
+socket.on("message", (data) => {
+  let event;
+  try { event = JSON.parse(data.toString()); }
+  catch { console.error("Invalid event JSON"); socket.terminate(); return; }
+  if (event.response?.id) console.error("Response ID:", event.response.id);
+  if (event.type === "response.output_text.delta") process.stdout.write(event.delta || "");
+  if (["response.completed", "response.incomplete", "response.failed", "response.cancelled"].includes(event.type)) {
+    terminal = true;
+    console.log("\nFinal:", event.type, "usage:", event.response?.usage);
+    if (event.type !== "response.completed") process.exitCode = 1;
+    clearTimeout(timer);
+    socket.close();
+  }
+  if (event.type === "error") {
+    console.error(event.error || event);
+    process.exitCode = 1;
+    clearTimeout(timer);
+    socket.close();
+  }
+});
+socket.on("error", (error) => { console.error(error.message); process.exitCode = 1; });
+socket.on("close", () => {
+  clearTimeout(timer);
+  if (!terminal) { console.error("Closed before terminal event; inspect response status"); process.exitCode = 1; }
+});
+```
+
+文本事件按增量输出，工具参数事件也需要收集完整后处理。保存每次返回的响应 ID及最终 usage，断线时先核对已有响应，避免自动重发生成事件造成重复请求。该示例只发送一轮。
+
+## Realtime 和代理
+
+Realtime 连接路径为 `/v1/realtime?model=YOUR_MODEL`，session、音频格式、VAD 和工具事件使用上游支持的原生协议。Responses 的 `response.create` 与 Realtime 的消息结构有区别，使用对应 SDK及模型能力配置。
+
+升级失败时检查密钥、模型传输支持、请求 URL和代理 Upgrade / Connection 头。代理示例见[SSE 与 WebSocket 代理](/conversation/reverse-proxy)，频率与并发说明见[鉴权](/authentication)。

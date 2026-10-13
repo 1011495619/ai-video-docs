@@ -1,0 +1,166 @@
+---
+title: "OpenAI 图片兼容接口"
+description: "通过标准 generations、edits 获取图片，或提交异步批次后轮询结果。"
+---
+
+这些接口使用平台图片模型和 API Key，便于接入 OpenAI SDK。与 [POST /v1/images](/images/create) 的单个异步任务相比，兼容接口支持 `n` 张图片并使用 OpenAI 图片响应结构。
+
+## 选择同步或异步
+
+| 方式 | 创建接口 | 查询与结果 |
+| --- | --- | --- |
+| 等待结果 | `/v1/images/generations`、`/v1/images/edits` | HTTP 请求等待后返回 `data[]` |
+| 异步批次 | `/v1/images/generations/async`、`/v1/images/edits/async` | 返回 `202`，轮询 `/v1/images/tasks/{id}` |
+| 单个任务 | `/v1/images` | 返回任务 ID，轮询 `/v1/images/{id}` |
+
+等待结果的接口默认最多等待约 10 分钟，前置代理或客户端可能更早超时。长时间生成或较大批次建议使用异步方式。请求断开后，已提交的图片任务仍可能继续生成。
+
+## 文生图
+
+```bash
+curl "https://api.example.com/api/v1/images/generations" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "YOUR_IMAGE_MODEL",
+    "prompt": "一张咖啡产品海报，暖色自然光，真实摄影",
+    "n": 1,
+    "response_format": "url"
+  }'
+```
+
+```json
+{
+  "created": 1776843503,
+  "data": [{"url":"https://example.com/result.png"}],
+  "task_ids": ["task_xxx"]
+}
+```
+
+读取 `data[].url`，保存 `task_ids` 便于后续核对。`response_format: "b64_json"` 时读取 `data[].b64_json` 并 Base64 解码；返回的是图片字节编码，不含 Data URL 前缀。
+
+## 请求字段与限制
+
+| 字段 | 类型 / 默认 | 说明 |
+| --- | --- | --- |
+| `model` | string，必填 | 图片模型公开 ID |
+| `prompt` | string，必填 | 非空提示词，最多 10000 字符 |
+| `n` | integer，默认 1 | 1–128；还受账户余额、每日额度和任务并发限制 |
+| `response_format` | string，默认 `url` | `url` 或 `b64_json` |
+| `size` | string，可选 | 当前模型支持的尺寸或比例 |
+| `quality` / `style` | string，可选 | 当前模型支持的质量及风格 |
+| `stream` | boolean，可选 | 此接口返回完整 JSON，使用 `false` |
+| `image` / `images` / `image[]` | string / array / file | 仅编辑接口；三个 JSON 字段选择其中一个 |
+| `mask` | string / file，可选 | 编辑遮罩图，URL 与文件选择一种 |
+
+`background`、`moderation`、`output_format`、`input_fidelity`、`user` 和 `output_compression` 也是兼容字段，但实际支持取决于模型及上游；`output_compression` 为 0–100 整数。该协议的字段与任务接口的 `parameters` 有不同解析方式，首次调用应使用最小请求并查询模型能力。
+
+每个批次最多 16 张参考输入图，模型的参考图上限可能更低。文件与 Data URL 接受 PNG、JPEG、WEBP；单图协议上限 50 MiB，同时受平台 API 图片和素材图片配置中较低的上限约束。文件及 Data URL 输入合计上限 64 MiB，结果转换也有合计大小限制；大批次推荐 URL 返回方式。
+
+## 图片编辑
+
+本地文件使用 multipart，客户端自动生成 Content-Type 和 boundary：
+
+```bash
+curl "https://api.example.com/api/v1/images/edits" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "model=YOUR_IMAGE_MODEL" \
+  -F "prompt=保留主体，把背景替换为浅灰色摄影棚" \
+  -F "n=1" \
+  -F "response_format=url" \
+  -F "image=@/path/to/reference.png"
+```
+
+多个文件可重复传 `image[]`；遮罩文件字段为 `mask`。所选模型需支持参考图或局部编辑。
+
+也可使用 JSON 的 HTTP(S) URL；此兼容编辑入口另外接受 `data:image/png;base64,...` 等图片 Data URL。
+
+```bash
+curl "https://api.example.com/api/v1/images/edits" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"YOUR_IMAGE_MODEL",
+    "prompt":"把主体转成水彩风格",
+    "image":"https://example.com/reference.png",
+    "n":1,
+    "response_format":"url"
+  }'
+```
+
+编辑必须提供至少一张参考图。文生图 `generations` 入口若要使用参考图或遮罩，应切换到 `edits` 路径。
+
+## 异步批次
+
+```bash
+curl -i "https://api.example.com/api/v1/images/generations/async" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"YOUR_IMAGE_MODEL","prompt":"一张极简产品海报","n":2,"response_format":"url"}'
+```
+
+创建返回 HTTP `202`，并附 `Location` 查询路径和 `Retry-After: 3`：
+
+```json
+{
+  "id": "IMAGE_REQUEST_UUID",
+  "task_id": "IMAGE_REQUEST_UUID",
+  "object": "image.generation.task",
+  "status": "processing",
+  "created_at": 1776843503,
+  "expires_at": 1776929903,
+  "poll_url": "/api/v1/images/tasks/IMAGE_REQUEST_UUID"
+}
+```
+
+使用实际返回的批次 ID 查询：
+
+```bash
+curl "https://api.example.com/api/v1/images/tasks/IMAGE_REQUEST_UUID" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+| 状态 | 处理 |
+| --- | --- |
+| `processing` | 继续按约 3 秒以上间隔轮询，结合限频配置调整 |
+| `completed` | 读取 `result.data`，并检查 `result.partial` 与 `result.errors` |
+| `failed` | 读取顶层 `error`、`http_status`；本次 GET 仍可能为 HTTP `200` |
+
+完成时的结构示例：
+
+```json
+{
+  "id":"IMAGE_REQUEST_UUID",
+  "task_id":"IMAGE_REQUEST_UUID",
+  "object":"image.generation.task",
+  "status":"completed",
+  "created_at":1776843503,
+  "expires_at":1776929903,
+  "completed_at":1776843803,
+  "http_status":200,
+  "image_url":"https://example.com/result-1.png",
+  "result":{
+    "created":1776843503,
+    "data":[{"url":"https://example.com/result-1.png"},{"url":"https://example.com/result-2.png"}],
+    "task_ids":["task_1","task_2"]
+  }
+}
+```
+
+批次默认有效期为创建后 24 小时，以 `expires_at` 为准。顶层 `id` 是批次 UUID，`result.task_ids` 是子图片任务 ID；分别使用 `/images/tasks/{id}` 和 `/images/{id}` 查询。
+
+## 部分成功与超时
+
+```json
+{
+  "created":1776843503,
+  "data":[{"url":"https://example.com/result-1.png"}],
+  "task_ids":["task_1","task_2"],
+  "partial":true,
+  "requested":2,
+  "submitted":2,
+  "errors":[{"index":1,"task_id":"task_2","code":"image_generation_failed","message":"Image generation failed"}]
+}
+```
+
+`index` 从 0 开始。部分成功时保留成功结果，结合子任务记录核对失败项；`submitted` 小于 `requested` 时有部分图片尚未提交。同步入口没有可交付结果时可能返回 `502/504`，正文仍包含 `task_ids` 和 `errors`。先检查已有任务状态和账单，再决定后续提交，避免整个批次重复生成。

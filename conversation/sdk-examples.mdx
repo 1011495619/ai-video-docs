@@ -1,0 +1,107 @@
+---
+title: "SDK 流式示例"
+description: "使用 OpenAI、Anthropic 和 Google GenAI SDK 接入平台。"
+---
+
+以下示例使用平台公开模型名。设置 `PLATFORM_API_KEY`，按实际部署地址调整 `base_url`。示例用于说明 SDK 配置，真实供应商联调仍需使用实际模型验证。
+
+## Base URL 配置差异
+
+| SDK | 示例配置 | 原因 |
+| --- | --- | --- |
+| OpenAI Python / JavaScript | `https://api.example.com/api/v1` | SDK追加 `/chat/completions`、`/responses` |
+| Anthropic Python | `https://api.example.com/api` | SDK追加 `/v1/messages` |
+| Google GenAI Python | `https://api.example.com/api` + `api_version="v1beta"` | SDK构建 `/v1beta/models/...` |
+
+用工作台实际地址替换域名及服务前缀。OpenAI SDK可直接使用工作台含 `/v1` 的 Base URL；其他 SDK按照上表处理版本前缀。模型名从[标准列表](/conversation/models-and-errors)读取，先确认目标协议支持。
+
+OpenAI Python（`pip install openai`）：
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PLATFORM_API_KEY"],
+    base_url="https://api.example.com/api/v1",
+)
+with client.chat.completions.create(
+    model="YOUR_MODEL",
+    messages=[{"role": "user", "content": "你好"}],
+    max_tokens=512,
+    stream=True,
+    stream_options={"include_usage": True},
+) as stream:
+    for chunk in stream:
+        if chunk.choices:
+            print(chunk.choices[0].delta.content or "", end="", flush=True)
+        if chunk.usage:
+            print("\n用量:", chunk.usage)
+```
+
+OpenAI JavaScript Responses（`npm install openai`）：
+
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PLATFORM_API_KEY,
+  baseURL: "https://api.example.com/api/v1",
+});
+const stream = await client.responses.create({
+  model: "YOUR_MODEL",
+  input: "你好",
+  max_output_tokens: 512,
+  stream: true,
+});
+for await (const event of stream) {
+  if (event.type === "response.output_text.delta") process.stdout.write(event.delta);
+  if (event.type === "response.completed") console.log(event.response.usage);
+}
+```
+
+Anthropic Python（`pip install anthropic`）：
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["PLATFORM_API_KEY"],
+    base_url="https://api.example.com/api",
+)
+with client.messages.stream(
+    model="YOUR_MODEL",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "你好"}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+    print("\n用量:", stream.get_final_message().usage)
+```
+
+Google GenAI Python（`pip install google-genai`）：
+
+```python
+import os
+from google import genai
+from google.genai import types
+
+client = genai.Client(
+    api_key=os.environ["PLATFORM_API_KEY"],
+    http_options=types.HttpOptions(
+        base_url="https://api.example.com/api",
+        api_version="v1beta",
+    ),
+)
+for chunk in client.models.generate_content_stream(model="YOUR_MODEL", contents="你好"):
+    print(chunk.text or "", end="", flush=True)
+    if chunk.usage_metadata:
+        print("\n用量:", chunk.usage_metadata)
+```
+
+## 超时与重试
+
+SDK可能自动重试部分网络及 HTTP 错误。生成请求存在已被接受但客户端超时的情况，业务需避免重复操作时，可给 OpenAI / Anthropic Python 客户端设置 `max_retries=0`，OpenAI JavaScript 设置 `maxRetries: 0`，再由业务层核对响应或任务记录后处理。
+
+首次接入先使用较低输出上限验证普通请求，再启用流式。捕获 SDK错误时保存 HTTP 状态、错误正文和请求时间；收集流式最终事件及 usage，连接中途退出时检查平台记录。详见[错误处理](/errors)。

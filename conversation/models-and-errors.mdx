@@ -1,0 +1,89 @@
+---
+title: "模型列表与错误格式"
+description: "对话模型的标准列表接口和错误返回约定。"
+---
+
+OpenAI SDK 使用 `GET /v1/models`；Anthropic SDK 使用相同入口并携带 `anthropic-version`；Gemini SDK 使用 `GET /v1beta/models`。错误按对应协议返回，不使用旧图片/视频接口的业务信封。流式连接建立前返回 JSON 错误，建立后使用协议事件发送错误。
+
+## OpenAI 模型列表
+
+```bash
+curl "https://api.example.com/api/v1/models" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```json
+{
+  "object":"list",
+  "data":[{
+    "id":"YOUR_MODEL",
+    "object":"model",
+    "created":1776843503,
+    "owned_by":"platform",
+    "supported_operations":["chat","responses"],
+    "max_output_tokens":8192,
+    "supported_transports":["json","sse"]
+  }]
+}
+```
+
+能力字段按模型配置提供，可能省略；示例值不代表所有模型的能力。`max_output_tokens` 用于限制请求输出，`context_window` 表示上下文配置。支持 Chat 的模型未必支持 Responses、向量、音频或 WebSocket。
+
+## 操作与请求路径
+
+| `supported_operations` 值 | 入口 |
+| --- | --- |
+| `chat` / `completions` | `/v1/chat/completions` / `/v1/completions` |
+| `responses` | `/v1/responses` |
+| `messages` / `messagesCountTokens` | `/v1/messages` / `/v1/messages/count_tokens` |
+| `gemini` / `geminiCountTokens` | Gemini `:generateContent` / `:countTokens` |
+| `embeddings` / `moderations` / `rerank` | `/v1/embeddings` / `/v1/moderations` / `/v1/rerank` |
+| `audioSpeech` / `audioTranscriptions` / `audioTranslations` | `/v1/audio/speech` / `/v1/audio/transcriptions` / `/v1/audio/translations` |
+| `geminiEmbedContent` / `geminiBatchEmbedContents` | Gemini `:embedContent` / `:batchEmbedContents` |
+| `responsesCompact` / `responsesInputTokens` | `/v1/responses/compact` / `/v1/responses/input_tokens` |
+
+操作字段用于确认能力，实际请求字段按对应厂商协议提供。辅助接口的用量格式、价格和路由也需要管理员配置。
+
+## Anthropic 和 Gemini 列表
+
+```bash
+curl "https://api.example.com/api/v1/models" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01"
+
+curl "https://api.example.com/api/v1beta/models" \
+  -H "x-goog-api-key: YOUR_API_KEY"
+```
+
+Messages 列表从 `data[].id` 读取模型名，模型项 `created_at` 是 ISO 日期。Gemini 列表从 `models[].baseModelId` 或 `name` 读取，能力使用 `supportedGenerationMethods`、`supportedOperations`、`outputTokenLimit` 等字段。
+
+图片/视频任务参数、价格和示例另外使用[模型目录](/models)的 `data.models`，与这些标准对话列表有不同结构。
+
+## 错误正文
+
+<Tabs>
+  <Tab title="OpenAI / Responses">
+```json
+{
+  "error": {
+    "message":"API Key 无效",
+    "type":"authentication_error",
+    "param":null,
+    "code":"authentication_error"
+  }
+}
+```
+  </Tab>
+  <Tab title="Anthropic">
+```json
+{"type":"error","error":{"type":"authentication_error","message":"API Key 无效"}}
+```
+  </Tab>
+  <Tab title="Gemini">
+```json
+{"error":{"code":401,"message":"API Key 无效","status":"UNAUTHENTICATED"}}
+```
+  </Tab>
+</Tabs>
+
+HTTP 状态用于判断认证、额度和临时故障；正文用于定位原因。SSE 建立后错误通过事件发送，客户端需监听事件并判断是否收到协议终止结果。具体重试和故障定位见[错误处理](/errors)。

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "AI Video 文档",
+  "description": "AI Video API 接入指南与供应商配置说明",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "search": {
+    "prompt": "搜索文档"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "接入指南",
+        "groups": [
+          {
+            "group": "开始接入",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "api-overview",
+              "authentication",
+              "account",
+              "models",
+              "files/upload"
+            ]
+          },
+          {
+            "group": "对话模型",
+            "pages": [
+              "conversation/chat-completions",
+              "conversation/protocols",
+              "conversation/responses",
+              "conversation/anthropic",
+              "conversation/gemini",
+              "conversation/sdk-examples",
+              "conversation/websocket",
+              "conversation/models-and-errors",
+              "conversation/reverse-proxy"
+            ]
+          },
+          {
+            "group": "图片生成",
+            "pages": [
+              "images/create",
+              "images/query",
+              "images/openai-compatible"
+            ]
+          },
+          {
+            "group": "视频生成",
+            "pages": [
+              "videos/create",
+              "videos/query"
+            ]
+          },
+          {
+            "group": "接口约定",
+            "pages": [
+              "tasks/status",
+              "tasks/python-example",
+              "parameters",
+              "errors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "管理指南",
+        "groups": [
+          {
+            "group": "供应商配置",
+            "pages": [
+              "administration/provider-routes"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/openapi-integration-guide",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/api-provider-route-admin-guide",
+      "destination": "/administration/provider-routes"
+    }
+  ]
+}

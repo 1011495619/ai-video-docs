@@ -1,0 +1,112 @@
+---
+title: "查询视频任务"
+description: "读取视频任务进度、结果与错误信息。"
+---
+
+接口：
+
+```text
+GET /v1/videos/{taskId}
+```
+
+## 请求
+
+```bash
+curl -X GET "https://api.example.com/api/v1/videos/task_xxx" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 处理中响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "video",
+  "model": "sora-2",
+  "status": "processing",
+  "progress": 45,
+  "created_at": 1776843503,
+  "aspectRatio": "16:9",
+  "seconds": "10"
+}
+```
+
+## 完成响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "video",
+  "model": "sora-2",
+  "status": "completed",
+  "progress": 100,
+  "created_at": 1776843503,
+  "aspectRatio": "16:9",
+  "seconds": "10",
+  "video_url": "https://example.com/result.mp4",
+  "result": {
+    "video_url": "https://example.com/result.mp4"
+  },
+  "completed_at": 1776843803,
+  "processing_time": 300000
+}
+```
+
+## 返回字段与结果读取
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` / `object` / `model` | 任务 ID、`video` 类型、公开模型名 |
+| `status` / `progress` | 状态与显示进度，完成以 `status` 判断 |
+| `aspectRatio` / `size` | 比例或尺寸，可选，比例优先以 `aspectRatio` 返回 |
+| `seconds` | 视频时长，单位秒，通常为字符串 |
+| `video_url` | 完成后可用的视频 URL |
+| `result` | 已记录的生成结果，视频 URL也可能位于 `result.video_url` |
+| `created_at` / `completed_at` / `failed_at` | Unix 秒，按状态提供 |
+| `processing_time` | 已记录的任务耗时，毫秒，可能为空 |
+| `usage` | 有有效最终用量时返回，下文说明字段含义 |
+| `error` | 失败原因和错误码 |
+
+先检查 `status`，`completed` 时读取顶层 `video_url`，或 `result.video_url`。进度更新可能晚于状态，完成判断只依赖状态。HTTP `200` 且 `failed` 是已结束的失败任务，保存 ID与错误排查。
+
+查询可由同一用户的其他密钥发起，跨账户的任务不会作为可用结果返回。请求超时先保留 ID继续核对，避免重新创建。使用[Python 完整示例](/tasks/python-example)可实现带总时限的查询与结果提取。
+
+任务完成且有有效最终 Token 用量时，响应顶层额外返回 `usage`：
+
+```json
+{
+  "usage": {
+    "totalTokens": 87300,
+    "outputTokens": 87300
+  }
+}
+```
+
+| 字段                | 类型   | 说明                                                |
+| ------------------- | ------ | --------------------------------------------------- |
+| `totalTokens`       | number | 总 Token 用量，已包含输入和输出，避免与分项重复相加 |
+| `inputTokens`       | number | 输入 Token 用量，包含缓存输入                       |
+| `outputTokens`      | number | 生成结果的输出 Token 用量                           |
+| `cachedInputTokens` | number | 输入 Token 中命中缓存的部分                         |
+
+所有用量字段均为可选的非负整数，实际报告的 `0` 会保留；输入、输出都齐全时会计算总量。缺失字段省略，创建、处理中、失败或缺少有效最终用量时省略整个 `usage`。任务完成后，上游延迟补齐的用量可在后续查询中取得。`usage` 缺失表示暂无有效最终用量，不代表免费；`usage` 表示用量，不代表扣费金额或结算状态。重试后返回成功执行的用量。
+
+视频和图片任务查询使用相同的用量规则。公开任务响应省略 `billing`，金额和结算状态在管理端查看。
+
+## 失败响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "video",
+  "model": "sora-2",
+  "status": "failed",
+  "progress": 100,
+  "created_at": 1776843503,
+  "error": {
+    "message": "generation failed",
+    "code": "generation_failed"
+  },
+  "failed_at": 1776843603
+}
+```

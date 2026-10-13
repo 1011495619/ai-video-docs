@@ -1,0 +1,32 @@
+---
+title: "AI Video 文档"
+description: "通过统一 API 接入对话、图片和视频模型。"
+---
+
+平台通过一个 API Key 提供对话、图片和视频模型。先从 API 工作台创建密钥，再获取可用模型并发起请求。
+
+<CardGroup cols={2}>
+  <Card title="快速开始" icon="rocket" href="/quickstart">准备 API Key，查询模型并完成第一次调用。</Card>
+  <Card title="对话模型" icon="comments" href="/conversation/chat-completions">使用 OpenAI、Anthropic 和 Gemini 协议及流式响应。</Card>
+  <Card title="图片生成" icon="image" href="/images/create">创建图片任务，使用参考图并查询结果。</Card>
+  <Card title="视频生成" icon="video" href="/videos/create">创建视频任务，上传参考素材并查询结果。</Card>
+</CardGroup>
+
+## 接入流程
+
+1. 在 API 工作台创建 API Key。
+2. 确认平台提供的 Base URL，并阅读[鉴权说明](/authentication)。
+3. 查询[模型目录](/models)，确认支持的任务和参数。
+4. 发起对话请求，或创建图片、视频生成任务。
+5. 异步任务按[状态说明](/tasks/status)轮询并保存最终结果。
+
+## 接口约定
+
+对话接口按对应厂商协议返回数据；图片、视频任务与模型目录的返回结构请参照各自页面的完整示例。
+
+首次接入可以按[快速开始](/quickstart)验证密钥和地址，再从[接口总览](/api-overview)选择业务入口。需要完整代码时，使用[SDK 示例](/conversation/sdk-examples)或[Python 任务流程](/tasks/python-example)；出现故障时按[错误处理](/errors)核对原因。
+
+<CardGroup cols={2}>
+  <Card title="OpenAI 图片兼容" icon="images" href="/images/openai-compatible">同步图片、编辑、批量异步任务和部分失败处理。</Card>
+  <Card title="账户与用量" icon="chart-simple" href="/account">每日额度、频率限制、价格和 Token 结算说明。</Card>
+</CardGroup>

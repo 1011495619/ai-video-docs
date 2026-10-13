@@ -1,0 +1,297 @@
+---
+title: "供应商路由配置"
+description: "管理端模型任务、供应商模型与路由的配置归属和示例。"
+---
+
+本文只描述 API 供应商 V2 当前保存格式。配置分散在模型任务、供应商模型和路由三个位置，不要把它们合并成一个 JSON。
+
+## 配置归属
+
+| 位置 | 字段 | 作用 |
+| --- | --- | --- |
+| 模型任务 | `parameterSchema` | 定义标准请求字段、校验和管理端控件 |
+| 模型任务 | `variantSpec` | 定义时长、比例等可选变体 |
+| 模型任务 | `capabilitySpec.executionPolicy` | 设置该模型任务的默认执行策略 |
+| 供应商模型 | `capabilityOverrides` | 收窄或覆盖上游模型能力 |
+| 路由 | `adapterKey` | 选择运行时适配器 |
+| 路由 | `providerRouteOptions` | 配置请求、响应、路径和路由级执行策略 |
+| 路由 | `modelCodeResolver` | 根据已选择的变体生成上游模型编码 |
+
+## 标准任务类型
+
+任务类型必须使用系统标准值。常用值如下：
+
+```txt
+video.generate
+video.first_last_frame_to_video
+video.extend
+image.generate
+workflow.run
+```
+
+模型任务和路由的 `taskKind` 必须一致。
+
+## 适配器
+
+管理端当前提供三个适配器：
+
+| `adapterKey` | 用途 |
+| --- | --- |
+| `openai-compatible` | 可配置的同步或异步图片、视频接口 |
+| `volcengine-ark-content-generation` | 火山方舟内容生成任务 |
+| `coze-workflow` | Coze 工作流 |
+
+新路由应从管理端适配器列表选择，不要手写未出现在列表中的值。
+
+## OpenAI 兼容路由示例
+
+异步视频接口的 `providerRouteOptions`：
+
+```json
+{
+  "execution": { "mode": "async" },
+  "endpoint": {
+    "submitPath": "/v1/videos",
+    "queryPath": "/v1/videos/{taskId}"
+  },
+  "request": {
+    "map": {
+      "model": "route.providerModelCode",
+      "prompt": "request.prompt",
+      "seconds": "request.duration",
+      "size": "request.size",
+      "input_reference": "request.images"
+    },
+    "valueFormats": { "input_reference": "array" },
+    "requiredFields": ["model", "prompt"]
+  },
+  "response": {
+    "map": {
+      "taskId": ["id", "task_id", "data.id"],
+      "status": ["status", "data.status"],
+      "progress": ["progress", "data.progress"],
+      "outputUrl": ["url", "video_url", "data.url"],
+      "errorMessage": ["error.message", "message", "data.message"],
+      "errorCode": ["error.code", "code", "data.code"]
+    },
+    "statusMap": {
+      "queued": "submitted",
+      "pending": "submitted",
+      "processing": "processing",
+      "running": "processing",
+      "succeeded": "succeeded",
+      "success": "succeeded",
+      "completed": "succeeded",
+      "failed": "failed",
+      "error": "failed",
+      "cancelled": "failed"
+    }
+  },
+  "executionPolicy": {
+    "pollingPolicy": {
+      "statusMode": "polling",
+      "firstPollDelayMs": 3000,
+      "pollIntervalMs": 5000,
+      "timeoutMs": 600000,
+      "maxPollAttempts": 120
+    },
+    "retryPolicy": { "maxRetries": 1 },
+    "cooldownPolicy": {
+      "failureThreshold": 3,
+      "failureHealthMode": "auto"
+    }
+  }
+}
+```
+
+同步图片接口把 `execution.mode` 设为 `sync`，不配置查询路径，并把结果 URL 映射到 `outputUrl`：
+
+```json
+{
+  "execution": { "mode": "sync" },
+  "endpoint": { "submitPath": "/v1/images/generations" },
+  "request": {
+    "map": {
+      "model": "route.providerModelCode",
+      "prompt": "request.prompt",
+      "size": "request.size"
+    },
+    "openAiImageOptions": true,
+    "requiredFields": ["model", "prompt"]
+  },
+  "response": {
+    "map": {
+      "outputUrl": ["data.0.url", "data.0.b64_json"],
+      "errorMessage": ["error.message", "message"]
+    }
+  }
+}
+```
+
+## 请求映射
+
+### 分阶段请求头
+
+`providerRouteOptions.httpHeaders` 在账号公共请求头基础上，分别覆盖提交和查询请求：
+
+```json
+{
+  "httpHeaders": {
+    "submit": { "X-DashScope-Async": "enable" },
+    "query": { "X-DashScope-Async": null }
+  }
+}
+```
+
+未配置或空对象表示继承账号请求头；字符串新增或覆盖，`null` 删除继承的头。
+名称忽略大小写，同一阶段禁止重复名称，值只接受字符串或 `null`。
+`Authorization` 由账号凭证生成，请在账号配置中维护 API Key，不在此覆盖。
+支持 OpenAI 兼容（JSON/multipart）、火山方舟和 Coze 适配器。
+multipart 的 Content-Type 仍由表单自动生成，以保留 boundary。
+这些覆盖仅用于提交和查询，不用于素材下载、结果转存或模型目录查询。
+直接在路由策略现有的 `providerRouteOptions` JSON 编辑器中配置，已有账号和路由无需迁移。
+
+`providerRouteOptions.request.map` 的 key 是上游请求字段，value 是系统取值路径。
+
+常用系统取值路径：
+
+```txt
+route.providerModelCode
+request.prompt
+request.duration
+request.aspectRatio
+request.resolution
+request.size
+request.quality
+request.images
+request.videoUrls
+request.audioUrls
+request.options.<name>
+```
+
+例如，上游要求 `image_urls` 数组：
+
+```json
+{
+  "request": {
+    "map": { "image_urls": "request.images" },
+    "valueFormats": { "image_urls": "array" }
+  }
+}
+```
+
+`valueFormats` 支持：
+
+```txt
+auto
+array
+csv
+first
+image_data_uri
+object_array
+object_url_array
+```
+
+固定写入上游请求体的值放在 `request.defaults` 或 `request.providerOnlyOptions`，不要放入能力配置。
+
+## 响应映射
+
+`providerRouteOptions.response.map` 的 key 是系统结果字段，value 是一个或多个上游 JSON 路径。数组按顺序尝试，取第一个有效值。
+
+| 字段 | 作用 |
+| --- | --- |
+| `taskId` | 上游异步任务 ID |
+| `status` | 上游任务状态 |
+| `progress` | 进度 |
+| `outputUrl` | 单个或多个输出地址 |
+| `errorMessage` | 错误信息 |
+| `errorCode` | 错误码 |
+
+`response.statusMap` 的值使用 V2 状态：
+
+```txt
+created
+submitted
+processing
+succeeded
+failed
+cancelled
+expired
+```
+
+至少覆盖供应商文档中所有排队、处理中、成功、失败和取消状态。未知状态会影响终态判断。
+
+## 模型编码解析
+
+`modelCodeResolver` 是路由独立字段，不放在 `providerRouteOptions` 中。固定上游模型无需填写。
+
+```json
+{
+  "version": 1,
+  "rules": [
+    {
+      "when": { "duration": "5s" },
+      "code": "provider-video-5s"
+    },
+    {
+      "when": { "duration": "10s" },
+      "template": "provider-video-{duration.providerToken}"
+    }
+  ],
+  "fallback": "provider-video-default"
+}
+```
+
+`when` 匹配 `variantSpec` 产生的变体 key。`template` 可以读取变体中的 `providerToken`。
+
+## 执行策略
+
+模型任务策略保存在 `capabilitySpec.executionPolicy`，路由策略保存在 `providerRouteOptions.executionPolicy`。运行时先读取模型任务策略，再用路由策略逐项覆盖，最后应用本次提交的显式参数。
+
+```json
+{
+  "executionPolicy": {
+    "pollingPolicy": {
+      "statusMode": "polling",
+      "firstPollDelayMs": 3000,
+      "pollIntervalMs": 5000,
+      "timeoutMs": 600000,
+      "maxPollAttempts": 120
+    },
+    "retryPolicy": { "maxRetries": 1 },
+    "cooldownPolicy": {
+      "failureThreshold": 3,
+      "failureHealthMode": "auto"
+    }
+  }
+}
+```
+
+| `failureHealthMode` | 行为 |
+| --- | --- |
+| `auto` | 达到阈值后进入冷却，冷却到期后自动恢复 |
+| `degrade_only` | 只降级，不自动进入冷却 |
+| `keep_healthy` | 记录失败，但保持路由健康 |
+
+路由级策略适合供应商特有差异；多个路由共同使用的默认值应放在模型任务中。
+
+## 账号执行限制
+
+| 字段 | 行为 |
+| --- | --- |
+| `quotaLimit` | 累计预占次数上限，原子检查并递增 |
+| `metadata.executionLimits.maxConcurrency` | 同时运行的任务上限，原子预占，终态释放 |
+| `metadata.executionLimits.rateLimitPerMinute` | 最近 60 秒创建任务数上限 |
+| `metadata.executionLimits.cooldownMs` | 路由自动冷却时长 |
+
+并发达到上限时，路由选择会继续尝试其他可用账号或路由；没有任何候选满足时，提交返回无可用路由错误。系统轮询会分批校准并发计数，修复进程异常退出造成的计数漂移。
+
+## 保存前检查
+
+1. `taskKind` 在模型任务和路由上完全一致。
+2. `adapterKey` 来自管理端适配器列表。
+3. 提交和查询路径只填写 path，Base URL 放在账号配置。
+4. 异步接口同时配置 `taskId`、`status`、查询路径和状态映射。
+5. 所有请求映射值都使用系统取值路径。
+6. 能力字段放在模型任务或供应商模型，路由只保存调用行为。
+7. 先使用 Dry-run 查看最终路由、模型编码、请求映射和执行策略，再提交真实测试任务。

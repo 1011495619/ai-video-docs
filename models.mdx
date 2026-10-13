@@ -1,0 +1,94 @@
+---
+title: "模型目录"
+description: "查询可用模型、价格、任务类型和公开参数。"
+---
+
+图片/视频的价格与参数目录使用 `/v1/catalog/models`。通用 SDK 的 `/v1/models` 返回标准 OpenAI 模型列表（`object`、`data`）；Claude 请求携带 `anthropic-version`，Gemini 使用 `/v1beta/models`。原先读取 `/v1/models` 中 `data.models` 的集成请迁移到 `/v1/catalog/models`。
+
+## 请求
+
+```bash
+curl -X GET "https://api.example.com/api/v1/catalog/models" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "models": [
+      {
+        "id": "sora-2",
+        "name": "sora-2",
+        "type": "video_generation",
+        "pricing": {
+          "type": "per_call",
+          "amount": 1,
+          "currency": "CNY"
+        },
+        "status": "available",
+        "capabilities": {
+          "aspect_ratios": ["16:9", "9:16", "1:1"],
+          "resolutions": ["720p", "1080p"]
+        },
+        "tasks": [
+          {
+            "taskKind": "video.generate",
+            "parameters": [],
+            "requestExample": {
+              "model": "sora-2",
+              "prompt": "请输入生成内容描述"
+            }
+          }
+        ]
+      },
+      {
+        "id": "gpt-image2",
+        "name": "gpt-image2",
+        "type": "image_generation",
+        "pricing": {
+          "type": "per_call",
+          "amount": 1,
+          "currency": "CNY"
+        },
+        "status": "available"
+      }
+    ]
+  }
+}
+```
+
+## 字段说明
+
+| 字段                     | 说明                                                             |
+| ------------------------ | ---------------------------------------------------------------- |
+| `id`                     | 请求创建任务时使用的模型名                                       |
+| `type`                   | `video_generation` 表示视频模型，`image_generation` 表示图片模型 |
+| `pricing.type`           | 计费方式，常见为 `per_call` 或 `per_second`                      |
+| `pricing.amount`         | 单次或单位价格                                                   |
+| `tasks[].parameters`     | 当前模型公开支持的扩展参数                                       |
+| `tasks[].requestExample` | 当前模型推荐请求示例                                             |
+
+## 选择可用模型
+
+返回内容按当前账户与租户的模型可见性和可用价格筛选。模型未激活、未开放给用户、未配置公开别名或没有当前账户可用报价时，可能不会出现在目录中。列表为空时先核对账户所属站点及模型开放配置。
+
+`id` 和 `name` 是对外模型名，调用时优先填写 `model: id`。示例中的 `sora-2`、`gpt-image2` 需替换为实际可见名称。模型名称与界面显示标题、供应商内部名称可能不同。
+
+## 能力与任务契约
+
+| 能力字段 | 检查内容 |
+| --- | --- |
+| `input_modes` | 支持的输入模式 |
+| `sizes` / `aspect_ratios` | 像素尺寸与画面比例 |
+| `durations` | 支持的视频秒数 |
+| `resolutions` | 分辨率档位及大小写 |
+| `qualities` / `styles` | 质量与风格可选值 |
+| `image_reference` / `max_reference_images` | 是否支持参考图和参考数量上限 |
+
+这些字段可选，缺失表示目录没有提供该项说明。进一步查看对应任务的 `parameters`；新模型接入优先采用 `requestExample`，根据[参数契约](/parameters)替换提示词、媒体 URL和实际选项值。
+
+目录价格是当前可用单位报价，具体尺寸、时长和档位可能影响最终任务报价。金额与用量的区别见[账户页面](/account)。目录有约两分钟缓存，适合启动时或定期刷新，无需在每次任务轮询前查询。

@@ -1,0 +1,91 @@
+---
+title: "Anthropic Messages"
+description: "配置版本头，使用 Messages 对话、流式文本和 Token 统计。"
+---
+
+## 发起请求
+
+模型列表请求 `GET /v1/models` 时带 `anthropic-version` 可取得 Messages 格式的可用模型。选择支持 `messages` 的公开模型 ID。
+
+```bash
+curl "https://api.example.com/api/v1/messages" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "YOUR_MESSAGES_MODEL",
+    "max_tokens": 512,
+    "system": "用简洁中文回答",
+    "messages": [{"role":"user","content":"解释异步任务"}],
+    "stream": false
+  }'
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `model` | 模型公开 ID |
+| `max_tokens` | 必填输出上限，正整数，遵守模型限制 |
+| `messages` | 多轮上下文；消息角色使用 `user`、`assistant` |
+| `system` | 顶层系统指令，string 或支持的内容块 |
+| `stream` | 布尔值，`true` 使用 SSE |
+| `tools` / `tool_choice` | 模型支持时声明工具及选择方式 |
+
+Messages 的系统指令放在顶层 `system`。Chat 的 `role: "system"` 消息格式请用于 Chat 接口。思考、缓存、图片和厂商 beta 参数依赖路由支持，先验证最小文本请求，再添加高级字段。
+
+## 读取响应
+
+```json
+{
+  "id": "msg_example",
+  "type": "message",
+  "role": "assistant",
+  "model": "YOUR_MESSAGES_MODEL",
+  "content": [{"type":"text","text":"异步任务提交后先返回 ID，稍后查询获取结果。"}],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {"input_tokens":18,"output_tokens":24}
+}
+```
+
+遍历 `content` 中 `type: "text"` 的块读取文本。`stop_reason: "max_tokens"` 表示触及输出上限；`tool_use` 表示模型要求调用工具，读取对应 `tool_use` 块后由业务端执行，再用匹配 `tool_use_id` 的 `tool_result` 内容块继续请求。
+
+## 流式消息
+
+```bash
+curl -N "https://api.example.com/api/v1/messages" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"YOUR_MESSAGES_MODEL","max_tokens":512,"messages":[{"role":"user","content":"你好"}],"stream":true}'
+```
+
+| 事件 | 处理方式 |
+| --- | --- |
+| `message_start` | 保存消息 ID 和起始用量 |
+| `content_block_start` | 建立对应索引的内容块 |
+| `content_block_delta` | 文本增量从 `delta.text` 读取；工具和思考使用各自 delta 类型 |
+| `content_block_stop` | 结束该内容块 |
+| `message_delta` | 更新 stop_reason 和最终输出用量 |
+| `message_stop` | 消息完成 |
+| `ping` / `error` | 忽略心跳，错误则记录并结束当前调用 |
+
+```text
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"你好"}}
+```
+
+建议使用 [Anthropic SDK 流式示例](/conversation/sdk-examples)，它会聚合完整消息和 usage。
+
+## Token 统计
+
+先检查模型支持 `messagesCountTokens`：
+
+```bash
+curl "https://api.example.com/api/v1/messages/count_tokens" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"YOUR_MESSAGES_MODEL","messages":[{"role":"user","content":"你好"}]}'
+```
+
+响应形如 `{"input_tokens": 8}`。统计结果用于了解输入规模，生成请求的实际结算依据该次调用最终用量。Chat/Messages 互转路由是否支持统计操作需另外核对，支持对话并不意味着支持全部辅助操作。

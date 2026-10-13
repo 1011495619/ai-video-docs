@@ -1,0 +1,72 @@
+---
+title: "Gemini GenerateContent"
+description: "使用 v1beta 模型入口，配置 contents、流式生成和 Token 统计。"
+---
+
+## 模型与地址
+
+Gemini 使用服务根地址下的 `/v1beta`，例如 `https://api.example.com/api/v1beta`。查询 `GET /v1beta/models`，读取 `models[].name`、`baseModelId` 和 `supportedGenerationMethods`。
+
+模型列表中的 `name` 通常是 `models/YOUR_MODEL`；示例路径已有 `/models/`，替换 `YOUR_GEMINI_MODEL` 时只填写模型 ID。Google SDK 会处理模型资源名，配置方式见 [SDK 示例](/conversation/sdk-examples)。
+
+## 普通生成
+
+```bash
+curl "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:generateContent" \
+  -H "x-goog-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contents": [{"role":"user","parts":[{"text":"解释异步任务"}]}],
+    "generationConfig": {"maxOutputTokens":512}
+  }'
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| URL 中的模型 ID | 选择支持 `generateContent` 的模型 |
+| `contents` | 对话消息列表，每项有 `role` 和 `parts` |
+| `parts[].text` | 文本内容；媒体输入使用模型支持的协议内容块 |
+| `generationConfig.maxOutputTokens` | 正整数输出上限，遵守模型限制 |
+| `systemInstruction` | 顶层系统指令，按厂商协议提供 `parts` |
+| `tools` | 模型支持时提供函数声明等工具 |
+
+多轮上下文使用 `user` 和 `model` 角色。模型 ID放在 URL，Chat 的 `messages` 字段则用于 Chat 接口。
+
+## 响应示例
+
+```json
+{
+  "candidates": [{
+    "content": {"role":"model","parts":[{"text":"异步任务先接受请求，执行结束后再提供结果。"}]},
+    "finishReason": "STOP",
+    "index": 0
+  }],
+  "usageMetadata": {"promptTokenCount":12,"candidatesTokenCount":18,"totalTokenCount":30}
+}
+```
+
+遍历 `candidates[].content.parts[].text` 读取文本；部分块可能是函数调用或其他内容。检查 `finishReason`、`promptFeedback`，触及输出上限或内容限制时可能没有预期文本。用量字段采用 Gemini 的驼峰命名，某些可选细分项会省略。
+
+## 流式生成
+
+```bash
+curl -N "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:streamGenerateContent?alt=sse" \
+  -H "x-goog-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"contents":[{"role":"user","parts":[{"text":"你好"}]}],"generationConfig":{"maxOutputTokens":512}}'
+```
+
+返回 SSE 的 `data:` JSON，按事件读取 candidates 的文本增量。保留终止信息和最终 `usageMetadata`，用量统计应依据最终报告。Google SDK 可直接迭代 `generate_content_stream` 返回的内容。
+
+## Token 统计与向量
+
+```bash
+curl "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:countTokens" \
+  -H "x-goog-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"contents":[{"role":"user","parts":[{"text":"你好"}]}]}'
+```
+
+响应形如 `{"totalTokens": 8}`。向量入口 `:embedContent`、`:batchEmbedContents` 也已提供，使用支持对应 `supportedGenerationMethods` 的向量模型，并按原生协议发送 content 与 taskType。普通文本生成模型可能只支持生成，调用前先核对列表。
+
+若 SDK 请求出现 `/v1/v1beta` 或 `/models/models/`，先检查 Base URL 和模型名拼接方式。[错误处理](/errors) 提供请求路径及协议排查步骤。

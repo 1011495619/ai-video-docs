@@ -1,0 +1,21 @@
+---
+title: "SSE 与 WebSocket 代理"
+description: "为流式响应和 WebSocket 配置反向代理。"
+---
+
+反向代理需要关闭 SSE 缓冲，并为 WebSocket 保留升级头。Nginx 示例：
+
+```nginx
+location /api/ {
+    proxy_pass http://backend;
+    proxy_http_version 1.1;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_set_header Connection $http_connection;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Host $host;
+}
+```
+
+如果代理按路径拆分配置，至少要让 `/api/v1/chat/completions`、`/api/v1/responses` 和 `/api/v1/realtime` 使用同一组长连接及升级规则。

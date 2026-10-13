@@ -1,0 +1,103 @@
+---
+title: "OpenAI Responses"
+description: "使用 input 发起生成，读取 output、SSE 事件，并按响应 ID 续接或查询。"
+---
+
+## 创建响应
+
+使用 `/v1/models` 中 `supported_operations` 包含 `responses` 的模型。普通响应读取 `output`，使用 OpenAI SDK 时可直接访问 `output_text` 聚合文本。
+
+```bash
+curl "https://api.example.com/api/v1/responses" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "YOUR_RESPONSES_MODEL",
+    "instructions": "用简洁中文回答",
+    "input": "解释什么是异步任务",
+    "max_output_tokens": 512,
+    "stream": false
+  }'
+```
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `model` | string | 公开模型 ID |
+| `input` | string / array | 文本或协议定义的输入项 |
+| `instructions` | string | 本轮指令，支持情况遵循上游 |
+| `max_output_tokens` | number | 正整数，遵守模型输出上限 |
+| `stream` | boolean | `true` 返回 SSE |
+| `previous_response_id` | string | 续接已有响应，需要同账户、租户、模型及原路由校验 |
+| `tools` | array | 模型支持的函数或厂商工具；按上游协议配置 |
+| `store` / `background` | boolean | 仅在上游支持对应持久化或后台运行语义时使用 |
+
+示意响应：
+
+```json
+{
+  "id": "resp_example",
+  "object": "response",
+  "status": "completed",
+  "model": "YOUR_RESPONSES_MODEL",
+  "output": [{
+    "id": "msg_example", "type": "message", "role": "assistant", "status": "completed",
+    "content": [{"type": "output_text", "text": "异步任务会先返回任务 ID，结果稍后通过查询取得。", "annotations": []}]
+  }],
+  "usage": {"input_tokens": 18, "output_tokens": 24, "total_tokens": 42}
+}
+```
+
+原始 HTTP JSON 应遍历 `output` 中 `type: "message"` 的项，再读取 `content` 中 `type: "output_text"` 的文本。其他项可能是工具调用或推理内容；输出限制等原因可能返回 `incomplete`，请同时查看 `incomplete_details` 或错误字段。
+
+## 流式事件
+
+```bash
+curl -N "https://api.example.com/api/v1/responses" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"YOUR_RESPONSES_MODEL","input":"你好","max_output_tokens":256,"stream":true}'
+```
+
+```text
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","delta":"你好"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_example","status":"completed","usage":{"input_tokens":8,"output_tokens":6,"total_tokens":14}}}
+```
+
+示例省略了事件序号和内容索引。文本来自 `response.output_text.delta.delta`；终止时检查 `response.completed`、`response.incomplete`、`response.failed` 等事件，并保存响应 ID 与最终 usage。仅收到文本增量并不表示响应已成功结束。
+
+## 续接上一轮
+
+```json
+{
+  "model": "YOUR_RESPONSES_MODEL",
+  "previous_response_id": "resp_example",
+  "input": "给一个实际使用例子",
+  "max_output_tokens": 512
+}
+```
+
+保存服务端实际返回的 ID。已有响应引用按所有权和原路由校验，跨账户引用会失败。上游未保留状态或暂不支持续接时，可按协议发送完整上下文；需要的本轮指令也应随请求提供。
+
+## 查询、取消与输入项
+
+以下资源依赖上游原生 Responses 及存储能力。平台使用已记录的响应归属和原路由访问资源。
+
+| 操作 | 方法与路径 | 说明 |
+| --- | --- | --- |
+| 查询 | `GET /v1/responses/{responseId}` | 读取状态、输出和用量 |
+| 取消 | `POST /v1/responses/{responseId}/cancel` | 上游支持取消的后台响应；取消后核对最终状态 |
+| 输入项 | `GET /v1/responses/{responseId}/input_items` | 支持 `limit` 1–100、`after`、`before`、`order` asc/desc、`include` |
+| 删除 | `DELETE /v1/responses/{responseId}` | 删除上游资源；账务待核对时可能返回 `409 usage_pending` |
+
+```bash
+curl "https://api.example.com/api/v1/responses/resp_example" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+curl -X POST "https://api.example.com/api/v1/responses/resp_example/cancel" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+这些 ID 使用 Responses 资源路径查询，图片和视频任务则使用各自的任务查询路径。其他辅助入口 `/v1/responses/compact`、`/v1/responses/input_tokens` 也依赖模型声明的操作和供应商支持，使用前先核对模型目录。

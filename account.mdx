@@ -1,0 +1,66 @@
+---
+title: "账户、额度与用量"
+description: "查询当前密钥额度和用户限制，理解价格、Token 用量与实际结算。"
+---
+
+## 查询账户
+
+```bash
+curl "https://api.example.com/api/v1/account" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```json
+{
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "account_id": "acct_USER_ID",
+    "status": "active",
+    "quota": {
+      "daily_limit": 100,
+      "daily_used": 7,
+      "daily_remaining": 93,
+      "reset_at": 1776902400
+    },
+    "rate_limit": {"requests_per_minute": 60},
+    "concurrency": {"max_concurrent_tasks": 5},
+    "created_at": 1776843503
+  }
+}
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `account_id` | 当前密钥所属账户的标识 |
+| `status` | 当前密钥状态 |
+| `quota.daily_limit` | 当前密钥配置的每日额度；`null` 表示该项未设上限 |
+| `quota.daily_used` | 当前密钥已记录的额度使用量 |
+| `quota.daily_remaining` | 每日上限减去已使用量；无上限时为 `null` |
+| `quota.reset_at` | 额度重置时间，Unix 秒；可能省略 |
+| `rate_limit.requests_per_minute` | 用户级每分钟请求限制 |
+| `concurrency.max_concurrent_tasks` | 用户级任务并发限制 |
+| `created_at` | 密钥创建时间，Unix 秒 |
+
+每日额度和余额分别校验；单密钥额度充足时仍可能触及用户级每日上限。此接口提供当前配置和已记录值，查询并不预留额度。`data` 中没有余额字段，余额和账单请在系统工作台查看。
+
+## 图片、视频价格
+
+[模型目录](/models) 的 `pricing` 提供当前账户可见的单位价格，币种为 `CNY`。`per_call` 按次、`per_second` 按秒；实际模型也可能配置其他计费方式。不同尺寸、时长和档位可能对应不同报价，目录单价作为接入参考，最终以任务报价和账单为准。
+
+创建生成任务时平台检查余额并执行扣费或预留流程。图片兼容接口的 `n` 会拆成多个图片任务，每个任务都有各自的计费记录。批次部分成功时，要结合 `partial`、`task_ids` 和 `errors` 核对结果，重复提交整个批次会创建新任务。
+
+## 对话 Token 用量
+
+对话请求开始时预留余额，收到供应商最终用量后按所配置的输入、输出、缓存及音频价格结算。Chat、Responses、Messages、Gemini 的用量字段遵循各自协议。
+
+- 总 Token 通常已经包含输入和输出，统计总量时避免再次相加。
+- 缓存 Token 是输入 Token 的细分项，账务按配置的缓存价格处理。
+- 流式调用应保存最终 usage 事件；中间文本长度并不是结算依据。
+- 请求断开或供应商未返回有效用量时，账务可能进入待核对；HTTP 超时本身并不说明任务免费或已退款。
+
+## 异步任务用量
+
+图片、视频查询只有在任务完成并取得有效最终用量时才返回可选 `usage`；字段为 `totalTokens`、`inputTokens`、`outputTokens`、`cachedInputTokens`。详见[视频查询](/videos/query)。用量缺失表示暂无有效最终报告，具体金额和结算状态应查看系统账单。
+
+联系支持时提供任务 ID、请求时间、模型、HTTP 状态及已取得的 `requestId`，密钥仅保留脱敏片段。

@@ -1,0 +1,97 @@
+---
+title: "查询图片任务"
+description: "读取图片任务进度、结果与错误信息。"
+---
+
+接口：
+
+```text
+GET /v1/images/{taskId}
+```
+
+## 请求
+
+```bash
+curl -X GET "https://api.example.com/api/v1/images/task_xxx" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 处理中响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "image",
+  "model": "gpt-image2",
+  "status": "processing",
+  "progress": 40,
+  "created_at": 1776843503,
+  "aspectRatio": "1:1"
+}
+```
+
+## 完成响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "image",
+  "model": "gpt-image2",
+  "status": "completed",
+  "progress": 100,
+  "created_at": 1776843503,
+  "aspectRatio": "1:1",
+  "url": "https://example.com/result.png",
+  "images": ["https://example.com/result.png"],
+  "result": {
+    "image_url": "https://example.com/result.png",
+    "images": ["https://example.com/result.png"]
+  },
+  "completed_at": 1776843803,
+  "processing_time": 300000
+}
+```
+
+## 返回字段
+
+| 字段 | 说明 |
+| --- | --- |
+| `id`、`object`、`model` | 任务 ID、`image` 类型和公开模型名 |
+| `status` | `queued`、`processing`、`completed`、`failed` |
+| `progress` | 显示进度，终止条件以 `status` 为准 |
+| `aspectRatio` / `size` | 实际任务比例或尺寸，可选 |
+| `url` / `images` | 完成后可用的图片 URL或列表，依据结果字段返回 |
+| `result` | 完成后原始结果对象；图片列表项可能是 URL字符串或含 `url` 的对象 |
+| `created_at` / `completed_at` / `failed_at` | Unix 秒，后两项按状态提供 |
+| `processing_time` | 已记录的任务耗时，毫秒；可能为空 |
+| `usage` | 完成且有有效最终用量时返回，见[账户与用量](/account) |
+| `error` | 失败时的 `message` 和 `code` |
+
+示例对应提供了画面比例的请求；只提供尺寸且没有比例时可能返回 `size`。HTTP `200` 不代表生成完成，需继续检查状态。结果缺少有效 URL时保存原始响应和任务 ID核对；创建、处理中和失败时没有成功结果字段。
+
+同一用户的密钥可查询该用户的任务，其他账户的任务不会作为可用结果返回。较长任务建议由后台 worker 轮询，[任务状态](/tasks/status)和[Python 示例](/tasks/python-example)说明间隔及重试策略。
+
+读取图片结果时，建议优先读取：
+
+1. `url`
+2. `images[0]`
+3. `result.image_url`
+4. `result.images[0]`
+
+## 失败响应
+
+```json
+{
+  "id": "task_xxx",
+  "object": "image",
+  "model": "gpt-image2",
+  "status": "failed",
+  "progress": 100,
+  "created_at": 1776843503,
+  "error": {
+    "message": "generation failed",
+    "code": "generation_failed"
+  },
+  "failed_at": 1776843603
+}
+```

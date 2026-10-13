@@ -1,0 +1,143 @@
+---
+title: "创建视频任务"
+description: "文生视频、图生视频、多媒体参考和上传参数。"
+---
+
+接口：
+
+```text
+POST /v1/videos
+```
+
+## 文生视频
+
+```bash
+curl -X POST "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sora-2",
+    "prompt": "一只可爱的小猫在阳光下玩耍，电影感，阳光明亮",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "seconds": "10",
+    "metadata": {
+      "order_id": "order_10001"
+    }
+  }'
+```
+
+## 图生视频
+
+```bash
+curl -X POST "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sora-2",
+    "prompt": "让参考图中的人物自然微笑并向镜头挥手，真实摄影风格",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "seconds": "10",
+    "images": [
+      "https://example.com/reference.png"
+    ],
+    "metadata": {
+      "order_id": "order_10002"
+    }
+  }'
+```
+
+## 多媒体参考视频
+
+部分模型支持参考视频或参考音频。是否支持以 `/v1/catalog/models` 返回的模型参数为准。
+
+```bash
+curl -X POST "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sora-2",
+    "prompt": "参考视频的主体动作，生成一段商业广告风格视频",
+    "videos": [
+      "https://example.com/source.mp4"
+    ],
+    "audios": [
+      "https://example.com/music.mp3"
+    ],
+    "resolution": "720p",
+    "seconds": "10"
+  }'
+```
+
+## 使用 Form-Data 上传参考图
+
+```bash
+curl -X POST "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "model=sora-2" \
+  -F "prompt=让参考图中的人物自然走动，电影感" \
+  -F "aspect_ratio=16:9" \
+  -F "resolution=720p" \
+  -F "seconds=10" \
+  -F "input_reference=@/path/to/reference.png"
+```
+
+## 视频请求字段
+
+| 字段           | 类型   | 必填 | 说明                                                     |
+| -------------- | ------ | ---- | -------------------------------------------------------- |
+| `model`        | string | 是   | 模型名，使用 `/v1/catalog/models` 返回的 `id`            |
+| `prompt`       | string | 是   | 视频生成提示词                                           |
+| `seconds`      | string / number | 否 | 正数时长，单位秒，支持值以所选模型为准                  |
+| `duration`     | string / number | 否 | `seconds` 的兼容别名，建议两者选一项                    |
+| `aspect_ratio` | string | 否   | 画面比例，如 `16:9`、`9:16`、`1:1`                       |
+| `resolution`   | string | 否   | 分辨率档位，如 `720p`、`1080p`                           |
+| `size`         | string | 否   | 尺寸，如 `1280x720`                                      |
+| `images`       | array  | 否   | 参考图片 URL 数组；JSON 请求不支持 Base64                |
+| `videos`       | array  | 否   | 参考视频 URL 数组                                        |
+| `audios`       | array  | 否   | 参考音频 URL 数组                                        |
+| `metadata`     | object | 否   | 业务自定义数据，会随任务保存                             |
+| `parameters`   | object | 否   | 模型公开扩展参数，字段名以 `/v1/catalog/models` 返回为准 |
+
+兼容字段：`video_urls`、`videoUrls`、`video_url`、`audio_urls`、`audioUrls`、`audio_url`、`aspectRatio` 也可用。新接入建议优先使用 `images`、`videos`、`audios`、`aspect_ratio`。
+
+## 创建响应示例
+
+```json
+{
+  "id": "task_xxx",
+  "object": "video",
+  "model": "sora-2",
+  "status": "queued",
+  "progress": 0,
+  "created_at": 1776843503,
+  "aspectRatio": "16:9",
+  "seconds": "10"
+}
+```
+
+## 模型能力与字段约束
+
+示例模型不一定支持全部参考媒体。首先查询目录中对应模型的 `capabilities` 和 `tasks[].parameters`：检查输入模式、支持时长、比例、分辨率、参考图数量及必填扩展参数。省略时长或尺寸时会使用模型配置的默认值，首次接入建议明确采用目录推荐值。
+
+`size` 是 `1280x720` 等像素尺寸，`aspect_ratio` 是 `16:9` 等比例；避免传入互相冲突的值。`seconds` 与 `duration` 只选择一个，Form-Data 时长以文本传递。新增模型参数使用公开的 `parameters` 字段，具体名称见[参数说明](/parameters)。
+
+## Form-Data 对象字段
+
+本地参考图字段为 `input_reference`，多图可以重复该字段，数量受平台上传配置和模型能力约束。对象字段 `metadata`、`parameters` 使用 JSON 文本，例如：
+
+```bash
+curl "https://api.example.com/api/v1/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "model=YOUR_VIDEO_MODEL" \
+  -F "prompt=让参考图中的主体自然移动" \
+  -F 'metadata={"order_id":"order_10003"}' \
+  -F "input_reference=@/path/to/reference.png"
+```
+
+客户端会生成 multipart boundary。需要复用图片、视频或音频时，先[上传素材](/files/upload)，再采用 JSON 的 `images`、`videos`、`audios` URL数组。
+
+## 创建后查询
+
+保存实际 `id`，使用[视频查询](/videos/query)读取结果。已提供比例时通常返回 `aspectRatio`；使用尺寸时可能返回 `size`。时间戳单位是秒，`seconds` 字段表示视频时长字符串。异步结果完成后读取 `video_url`，完整轮询和超时处理见[Python 示例](/tasks/python-example)。

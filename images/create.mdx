@@ -1,0 +1,111 @@
+---
+title: "创建图片任务"
+description: "文生图、图生图、多图参考及请求字段。"
+---
+
+接口：
+
+```text
+POST /v1/images
+```
+
+## 文生图
+
+```bash
+curl -X POST "https://api.example.com/api/v1/images" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-image2",
+    "prompt": "一张未来城市夜景海报，霓虹灯，电影感，细节丰富",
+    "aspect_ratio": "1:1",
+    "resolution": "1K",
+    "metadata": {
+      "order_id": "order_20001"
+    }
+  }'
+```
+
+## 图生图
+
+```bash
+curl -X POST "https://api.example.com/api/v1/images" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-image2",
+    "prompt": "把参考图改成赛博朋克海报风格，保持主体构图，电影级光影",
+    "aspect_ratio": "1:1",
+    "resolution": "1K",
+    "images": [
+      "https://example.com/source.png"
+    ],
+    "metadata": {
+      "order_id": "order_20002"
+    }
+  }'
+```
+
+## 多图参考
+
+```bash
+curl -X POST "https://api.example.com/api/v1/images" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-image2",
+    "prompt": "使用图一作为人物主体，参考图二的服装风格，生成一张商业大片海报，保持真实摄影质感",
+    "aspect_ratio": "16:9",
+    "resolution": "1K",
+    "images": [
+      "https://example.com/person.png",
+      "https://example.com/style.png"
+    ]
+  }'
+```
+
+## 图片请求字段
+
+| 字段           | 类型   | 必填 | 说明                                                     |
+| -------------- | ------ | ---- | -------------------------------------------------------- |
+| `model`        | string | 是   | 模型名，使用 `/v1/catalog/models` 返回的 `id`            |
+| `prompt`       | string | 是   | 非空提示词，最多 10000 字符                              |
+| `aspect_ratio` | string | 否   | 图片比例，如 `1:1`、`16:9`、`9:16`                       |
+| `resolution`   | string | 否   | 分辨率或档位，如 `1K`、`2K`、`4K`                        |
+| `quality`      | string | 否   | 质量档位，以模型支持值为准                                |
+| `style`        | string | 否   | 风格，以模型支持值为准                                    |
+| `size`         | string | 否   | 图片尺寸或比例，如 `1:1`、`1024x1024`                    |
+| `images`       | array  | 否   | 参考图片 URL 数组；JSON 请求不支持 Base64                |
+| `mask_url`     | string | 否   | 遮罩图 URL，用于局部重绘；JSON 请求不支持 Base64         |
+| `metadata`     | object | 否   | 业务自定义数据                                           |
+| `parameters`   | object | 否   | 模型公开扩展参数，字段名以 `/v1/catalog/models` 返回为准 |
+
+兼容字段：`image_urls`、`aspectRatio` 也可用。新接入建议优先使用 `images`、`aspect_ratio`。
+
+## 创建响应示例
+
+```json
+{
+  "id": "task_xxx",
+  "object": "image",
+  "model": "gpt-image2",
+  "status": "queued",
+  "progress": 0,
+  "created_at": 1776843503,
+  "aspectRatio": "1:1"
+}
+```
+
+## 参数选择与本地素材
+
+示例中的 `gpt-image2`、尺寸和分辨率需要出现在当前账户模型目录中。`resolution` 的大小写与枚举值以目录为准。先用 `tasks[].requestExample` 创建最小请求，再增加参考图和质量字段。
+
+`size` 表示尺寸或模型支持的比例；`aspect_ratio` 表示画面比例。两者描述同一目标时建议只传一项，避免互相冲突。`parameters` 中声明的公开字段也可能映射到这些能力，按[扩展参数](/parameters)页面填写。
+
+此直接任务接口每次创建一个图片任务，批量生成请使用 [OpenAI 图片兼容接口](/images/openai-compatible)的 `n` 参数。JSON 参考媒体使用 URL，本地图片先调用 [POST /v1/files](/files/upload) 并填写返回的 `url`。多图参考数量和遮罩编辑能力以所选模型为准。
+
+## 创建后读取结果
+
+HTTP `200` 表示任务已创建，返回顶层 `id`，随后调用 [GET /v1/images/{taskId}](/images/query)。创建和查询可能返回比例 `aspectRatio` 或尺寸 `size`，解析时按实际字段读取。业务关联 `metadata` 会随任务保存，公开查询对象并不保证返回它。
+
+任务失败需读取 `error`；创建请求超时先检查任务历史，避免重复提交。详细轮询代码见[Python 完整任务流程](/tasks/python-example)。

@@ -1,0 +1,167 @@
+---
+title: "Chat Completions"
+description: "OpenAI 兼容对话、辅助接口及 Chat/Messages 协议转换。"
+---
+
+对话模型提供 OpenAI、Anthropic、Gemini 标准协议入口。管理员可配置 Chat Completions 与 Anthropic Messages 双向 JSON/SSE 转换；其他协议目前仍依赖上游原生支持。平台按模型路由配置选择供应商，客户只需要使用平台 API Key；供应商密钥不会转发给客户。
+
+```bash
+curl "https://api.example.com/api/v1/chat/completions" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"YOUR_MODEL","messages":[{"role":"user","content":"你好"}]}'
+```
+
+将 `stream` 设置为 `true` 后返回标准 `text/event-stream`；每个数据帧保持 OpenAI `chat.completion.chunk` 格式，并以 `[DONE]` 结束。服务端会在请求开始前预留余额，收到供应商最终用量后按输入、输出、缓存和音频 Token 实际结算。
+
+辅助接口如下，具体可用操作以模型目录的 `supported_operations` 为准：
+
+| 接口 | 用途 | 传输 |
+| --- | --- | --- |
+| `POST /v1/completions` | 旧版文本补全 | JSON / SSE |
+| `POST /v1/embeddings` | 向量生成 | JSON |
+| `POST /v1/moderations` | 内容审核 | JSON |
+| `POST /v1/rerank` | 文档重排 | JSON |
+
+`embeddings`、`moderations`、`rerank` 使用 JSON，并要求路由在 `conversation.operations` 或 `conversation.paths` 中明确声明。供应商只支持 Chat 时，平台不会把辅助请求交给该路由。审核接口没有 usage、重排接口只有 search_units 时，当前 Token 账务会保留预留并进入待核对；这些计价方式仍在补齐，运营配置前需核对供应商用量格式。
+
+Chat/Messages 转换路由要求请求明确 `max_tokens`（Chat 也接受 `max_completion_tokens`）。文本、图片及函数工具可转换；厂商专有参数若暂无对应语义，会在扣费前返回具体参数错误。签名思考内容和缓存写入明细通过兼容扩展保留；计费始终依据原始上游用量。
+
+## 请求字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `model` | string，必填 | `/v1/models` 返回的公开模型 ID，需支持 `chat` |
+| `messages` | array，必填 | 完整对话上下文，每项包含 `role` 和 `content` |
+| `stream` | boolean | 默认普通 JSON；`true` 使用 SSE，JSON 中使用布尔值 |
+| `max_tokens` / `max_completion_tokens` | number | 输出 Token 上限，使用正整数并遵守模型上限；按模型配置选择字段 |
+| `temperature` | number | 采样参数，是否支持及取值范围由模型决定 |
+| `tools` | array | 模型支持工具时，声明函数名、说明和 JSON Schema |
+| `tool_choice` | string / object | 工具选择策略，取值依模型能力而定 |
+| `stream_options.include_usage` | boolean | 流式用量请求选项，支持情况由路由及上游决定 |
+
+对话 JSON 请求最大 16 MiB，所选模型还可能有自己的上下文和媒体限制。首次接入先使用文本和输出上限验证，再逐项增加媒体、工具及采样参数。
+
+## 普通 JSON 响应
+
+以下是示意响应，ID、模型和 Token 数量以实际返回为准：
+
+```json
+{
+  "id": "chatcmpl_example",
+  "object": "chat.completion",
+  "created": 1776843503,
+  "model": "YOUR_MODEL",
+  "choices": [{
+    "index": 0,
+    "message": {"role": "assistant", "content": "你好，我可以帮助你整理信息。"},
+    "finish_reason": "stop"
+  }],
+  "usage": {"prompt_tokens": 12, "completion_tokens": 16, "total_tokens": 28}
+}
+```
+
+文本读取 `choices[0].message.content`。`finish_reason: "length"` 表示达到输出限制，`tool_calls` 表示需要处理工具调用；工具响应时 `content` 可能为空，应读取 `message.tool_calls`。
+
+## 多轮对话
+
+每轮把已有的用户和助手消息一起发送。Chat 接口不会根据上一次 HTTP 请求自动补回上下文。
+
+```json
+{
+  "model": "YOUR_MODEL",
+  "messages": [
+    {"role": "system", "content": "你是一名简洁的旅行规划助手。"},
+    {"role": "user", "content": "我想在杭州玩两天"},
+    {"role": "assistant", "content": "第一天游西湖，第二天逛运河和博物馆。"},
+    {"role": "user", "content": "第一天遇到雨怎么办？"}
+  ],
+  "max_tokens": 512
+}
+```
+
+部分模型使用 `developer` 消息或对 `system` 有限制，请遵循对应模型的上游协议。
+
+## 流式响应
+
+```bash
+curl -N "https://api.example.com/api/v1/chat/completions" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "YOUR_MODEL",
+    "messages": [{"role": "user", "content": "介绍一下杭州"}],
+    "max_tokens": 512,
+    "stream": true,
+    "stream_options": {"include_usage": true}
+  }'
+```
+
+```text
+data: {"id":"chatcmpl_example","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"杭州"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl_example","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl_example","object":"chat.completion.chunk","choices":[],"usage":{"prompt_tokens":12,"completion_tokens":16,"total_tokens":28}}
+
+data: [DONE]
+```
+
+实际帧可能包含角色、工具参数或其他厂商字段。拼接 `delta.content` 得到文本；usage 帧可能没有 choices。按空行边界解析事件并忽略心跳，UTF-8 字符和 JSON 都可能跨网络数据块。建议直接使用 [SDK 流式示例](/conversation/sdk-examples)。
+
+## 图片输入
+
+需要模型及路由支持视觉输入。此处图片是对话输入，生成图片请使用[图片接口](/images/create)。
+
+```json
+{
+  "model": "YOUR_VISION_MODEL",
+  "messages": [{
+    "role": "user",
+    "content": [
+      {"type": "text", "text": "描述这张图片的主体和颜色"},
+      {"type": "image_url", "image_url": {"url": "https://example.com/reference.png"}}
+    ]
+  }],
+  "max_tokens": 512
+}
+```
+
+## 函数工具调用
+
+模型返回工具参数后，由你的服务执行函数，把结果与工具调用 ID 一起放回上下文，再请求模型继续回答。先检查模型是否支持工具。
+
+```json
+{
+  "model": "YOUR_TOOL_MODEL",
+  "messages": [{"role": "user", "content": "杭州现在天气怎么样？"}],
+  "max_tokens": 512,
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "查询城市当前天气",
+      "parameters": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"]
+      }
+    }
+  }]
+}
+```
+
+工具结果上下文示例：
+
+```json
+[
+  {"role": "user", "content": "杭州现在天气怎么样？"},
+  {"role": "assistant", "content": null, "tool_calls": [{
+    "id": "call_example", "type": "function",
+    "function": {"name": "get_weather", "arguments": "{\"city\":\"杭州\"}"}
+  }]},
+  {"role": "tool", "tool_call_id": "call_example", "content": "{\"temperature\":24,\"condition\":\"晴\"}"}
+]
+```
+
+流式工具参数也是增量字符串，应收集完整后再 JSON 解析，并由业务侧验证函数名和参数。

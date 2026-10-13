@@ -1,0 +1,39 @@
+---
+title: "Responses、Anthropic 与 Gemini"
+description: "按对应厂商协议调用对话、Token 统计和流式接口。"
+---
+
+支持以下标准入口，原生字段会按对应协议转发：
+
+| 协议                 | 入口                                                        | 流式方式    |
+| -------------------- | ----------------------------------------------------------- | ----------- |
+| OpenAI Responses     | `POST /v1/responses`                                        | JSON 或 SSE |
+| Anthropic Messages   | `POST /v1/messages`                                         | JSON 或 SSE |
+| Anthropic Token 统计 | `POST /v1/messages/count_tokens`                            | JSON        |
+| Gemini               | `POST /v1beta/models/{model}:generateContent`               | JSON        |
+| Gemini 流式          | `POST /v1beta/models/{model}:streamGenerateContent?alt=sse` | SSE         |
+| Gemini Token 统计    | `POST /v1beta/models/{model}:countTokens`                   | JSON        |
+
+Responses 支持 `previous_response_id`、取消、查询和有限分页；引用的响应始终按用户、租户、模型和原路由校验。Anthropic 请求带 `anthropic-version`，Gemini 请求可使用 `x-goog-api-key` 或标准 `?key=` 兼容认证（平台 API Key 仍按平台鉴权处理）。Realtime 的输入转录如果上游返回 Token 或时长证据，会按单独转录价格结算；证据缺失时账单会保留为待核对。
+
+## 按已有客户端选择
+
+| 客户端或需求 | 建议入口 | 输入 / 输出文本字段 |
+| --- | --- | --- |
+| OpenAI Chat SDK、多轮消息 | [Chat Completions](/conversation/chat-completions) | `messages` / `choices[].message.content` |
+| OpenAI Responses SDK、响应资源 | [Responses](/conversation/responses) | `input` / `output[].content[].text` |
+| Anthropic SDK | [Messages](/conversation/anthropic) | `messages` + 顶层 `system` / `content[].text` |
+| Google GenAI SDK | [Gemini](/conversation/gemini) | `contents[].parts` / `candidates[].content.parts` |
+
+平台入口统一使用平台密钥，各协议正文仍保留自己的字段格式。先在[模型列表](/conversation/models-and-errors)确认操作和传输支持，再按[SDK 示例](/conversation/sdk-examples)配置版本前缀。
+
+## 输出限制与流式终止
+
+| 协议 | 输出上限字段 | 流式文本与终止 |
+| --- | --- | --- |
+| Chat | `max_tokens` 或 `max_completion_tokens` | `delta.content`，检查 finish_reason 和 `[DONE]` |
+| Responses | `max_output_tokens` | `response.output_text.delta`，检查 completed / incomplete / failed |
+| Messages | `max_tokens` | content_block_delta，检查 message_delta 和 message_stop |
+| Gemini | `generationConfig.maxOutputTokens` | candidates 内容增量，检查 finishReason 和最终用量 |
+
+输出上限使用正整数，超过模型配置上限时会返回参数错误。流式处理中，SSE 事件与网络数据块有不同边界，应使用协议 SDK 或完整事件解析器。
