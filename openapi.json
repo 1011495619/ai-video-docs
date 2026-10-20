@@ -7,12 +7,12 @@
   },
   "servers": [
     {
-      "url": "https://{domain}/api",
+      "url": "{baseUrl}",
       "description": "客户 API 服务",
       "variables": {
-        "domain": {
-          "default": "ai.moyinai.com",
-          "description": "填写 API Key 所属站点的域名，例如 ai.moyinai.com。只填域名，不含 https://、/api 或接口路径。"
+        "baseUrl": {
+          "default": "https://ai.moyinai.com/api",
+          "description": "填写客户 API 对外服务的完整根地址，包含协议、域名、可选端口和 Nginx 路径前缀，例如 `https://api.customer.com/gateway`。根路径可填 `https://api.customer.com`。末尾不加 `/`，不包含 `/v1`、`/v1beta` 或具体接口路径。"
         }
       }
     }

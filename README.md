@@ -60,7 +60,7 @@ mint broken-links
 
 `openapi.json` 维护客户 API 的请求、响应和认证结构。`API 参考` 页面通过 `openapi: "openapi.json METHOD /path"` 绑定接口，在保留正文的同时展示 Mintlify 交互式调试区。
 
-当前包含 28 个客户接口，覆盖账户与模型、素材上传删除、对话协议、图片和视频任务、OpenAI 图片批次、Responses 资源和 Token 统计。API 服务通过 OpenAPI 服务器变量 `https://{domain}/api` 配置，默认域名为 `ai.moyinai.com`。每个客户可在调试区 Server 中填写自己的 API 域名，浏览器跨接口记住该值，新增客户无需重新发布文档。路径中已包含 `/v1` 或 `/v1beta`，避免重复拼接版本前缀。
+当前包含 28 个客户接口，覆盖账户与模型、素材上传删除、对话协议、图片和视频任务、OpenAI 图片批次、Responses 资源和 Token 统计。API 服务通过 OpenAPI 服务器变量 `{baseUrl}` 配置，默认为 `https://ai.moyinai.com/api`。每个客户可在调试区 Server 中填写完整 API 根地址，包含协议、域名、可选端口和 Nginx 对外路径前缀，也支持根路径部署。浏览器跨接口记住该值，新增客户或调整代理前缀无需重新发布文档。地址末尾不加 `/`；接口路径中已包含 `/v1` 或 `/v1beta`，避免重复拼接版本前缀。线上调试使用 Mintlify 代理可访问的公网服务地址。
 
 调试区使用 Mintlify API 代理，并提供 cURL、Python 和 JavaScript 示例。修改接口时同步维护 `openapi.json` 和对应 MDX 页面；不要直接发布包含后台接口的完整 Swagger 导出。
 

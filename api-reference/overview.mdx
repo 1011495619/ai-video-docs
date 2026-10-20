@@ -11,10 +11,10 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
   <Step title="准备 API Key">
     在你所属站点的 API 工作台创建密钥。不同客户可以共用这份文档，各自使用所属站点的 API 地址和密钥。
   </Step>
-  <Step title="填写客户 API 域名">
-    打开接口的 **Try it** 调试区，在 **Server** 中修改 `domain`。默认值为 `ai.moyinai.com`；其他客户填写自己的 API 域名，例如 `api.customer.com`。
+  <Step title="填写客户 API 根地址">
+    打开接口的 **Try it** 调试区，在 **Server** 中修改 `baseUrl`。默认值为 `https://ai.moyinai.com/api`；其他客户填写自己的完整 API 根地址，包含协议、域名、可选端口和对外路径前缀。
 
-    只填写域名，调试区自动拼接 `https://`、`/api` 和当前接口路径。浏览器会记住所填域名，并在其他接口中继续使用；切换客户时核对域名和 API Key。
+    例如 `https://api.customer.com/gateway` 或 `https://api.customer.com`。末尾不加 `/`，也不包含 `/v1`、`/v1beta` 或具体接口路径；调试区自动拼接当前接口路径。浏览器会记住所填地址，并在其他接口中继续使用；切换客户时核对地址和 API Key。
   </Step>
   <Step title="验证账户与模型">
     打开[账户接口](/account)，点击 **Try it**，在认证框中填写完整 API Key，再点击 **Send**。Bearer 认证框只填写密钥，前缀由调试区添加。
@@ -37,9 +37,18 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
 
 ## SaaS 多客户部署
 
-客户 A 填写 `api.customer-a.com`，账户请求发往 `https://api.customer-a.com/api/v1/account`；客户 B 填写 `api.customer-b.com`，相同接口发往客户 B 的地址。新增客户只需其 API 服务已部署并可访问，无需修改或重新发布文档。
+客户可以共用文档站，并按自己的部署方式设置 `baseUrl`：
 
-文档站的域名和 API 服务域名分别配置。共享文档站不会自动识别客户所属站点，第一次调试时按 API 工作台提供的地址填写 `domain`。
+| 对外部署方式 | `baseUrl` | 账户请求地址 |
+| --- | --- | --- |
+| 默认 `/api` 前缀 | `https://api.customer-a.com/api` | `https://api.customer-a.com/api/v1/account` |
+| Nginx 使用 `/gateway` 前缀 | `https://api.customer-b.com/gateway` | `https://api.customer-b.com/gateway/v1/account` |
+| 根路径转发 | `https://api.customer-c.com` | `https://api.customer-c.com/v1/account` |
+| 自定义端口和多层前缀 | `https://api.customer-d.com:8443/services/ai` | `https://api.customer-d.com:8443/services/ai/v1/account` |
+
+填写 Nginx 对外暴露的地址，代理负责将请求转发到后端对应接口；新增客户或调整代理前缀无需修改或重新发布文档。线上调试需使用 Mintlify 代理可访问的公网服务地址。
+
+文档站的域名和 API 服务地址分别配置。共享文档站不会自动识别客户所属站点，第一次调试时按 API 工作台提供的地址填写 `baseUrl`。
 
 ## 选择接口
 
