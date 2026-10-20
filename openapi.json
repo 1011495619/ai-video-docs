@@ -7,8 +7,14 @@
   },
   "servers": [
     {
-      "url": "https://ai.moyinai.com/api",
-      "description": "AI Video 线上服务"
+      "url": "https://{domain}/api",
+      "description": "客户 API 服务",
+      "variables": {
+        "domain": {
+          "default": "ai.moyinai.com",
+          "description": "填写 API Key 所属站点的域名，例如 ai.moyinai.com。只填域名，不含 https://、/api 或接口路径。"
+        }
+      }
     }
   ],
   "security": [

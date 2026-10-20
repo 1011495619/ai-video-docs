@@ -9,7 +9,12 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
 
 <Steps>
   <Step title="准备 API Key">
-    在 AI Video 的 API 工作台创建密钥。接口地址为 `https://ai.moyinai.com/api`；API Key 应来自该站点。
+    在你所属站点的 API 工作台创建密钥。不同客户可以共用这份文档，各自使用所属站点的 API 地址和密钥。
+  </Step>
+  <Step title="填写客户 API 域名">
+    打开接口的 **Try it** 调试区，在 **Server** 中修改 `domain`。默认值为 `ai.moyinai.com`；其他客户填写自己的 API 域名，例如 `api.customer.com`。
+
+    只填写域名，调试区自动拼接 `https://`、`/api` 和当前接口路径。浏览器会记住所填域名，并在其他接口中继续使用；切换客户时核对域名和 API Key。
   </Step>
   <Step title="验证账户与模型">
     打开[账户接口](/account)，点击 **Try it**，在认证框中填写完整 API Key，再点击 **Send**。Bearer 认证框只填写密钥，前缀由调试区添加。
@@ -30,7 +35,13 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
   点击 **Send** 会向实际 API 发起请求。生成请求按账户及模型的规则消耗额度；示例响应只是结构说明。调试请求通过 Mintlify 的 API 代理发送。
 </Note>
 
-## 选择入口
+## SaaS 多客户部署
+
+客户 A 填写 `api.customer-a.com`，账户请求发往 `https://api.customer-a.com/api/v1/account`；客户 B 填写 `api.customer-b.com`，相同接口发往客户 B 的地址。新增客户只需其 API 服务已部署并可访问，无需修改或重新发布文档。
+
+文档站的域名和 API 服务域名分别配置。共享文档站不会自动识别客户所属站点，第一次调试时按 API 工作台提供的地址填写 `domain`。
+
+## 选择接口
 
 <CardGroup cols={2}>
   <Card title="Chat Completions" icon="comments" href="/conversation/chat-completions">
