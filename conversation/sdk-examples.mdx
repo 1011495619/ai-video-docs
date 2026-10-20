@@ -9,9 +9,9 @@ description: "使用 OpenAI、Anthropic 和 Google GenAI SDK 接入平台。"
 
 | SDK | 示例配置 | 原因 |
 | --- | --- | --- |
-| OpenAI Python / JavaScript | `https://api.example.com/api/v1` | SDK追加 `/chat/completions`、`/responses` |
-| Anthropic Python | `https://api.example.com/api` | SDK追加 `/v1/messages` |
-| Google GenAI Python | `https://api.example.com/api` + `api_version="v1beta"` | SDK构建 `/v1beta/models/...` |
+| OpenAI Python / JavaScript | `https://ai.moyinai.com/api/v1` | SDK追加 `/chat/completions`、`/responses` |
+| Anthropic Python | `https://ai.moyinai.com/api` | SDK追加 `/v1/messages` |
+| Google GenAI Python | `https://ai.moyinai.com/api` + `api_version="v1beta"` | SDK构建 `/v1beta/models/...` |
 
 用工作台实际地址替换域名及服务前缀。OpenAI SDK可直接使用工作台含 `/v1` 的 Base URL；其他 SDK按照上表处理版本前缀。模型名从[标准列表](/conversation/models-and-errors)读取，先确认目标协议支持。
 
@@ -23,7 +23,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PLATFORM_API_KEY"],
-    base_url="https://api.example.com/api/v1",
+    base_url="https://ai.moyinai.com/api/v1",
 )
 with client.chat.completions.create(
     model="YOUR_MODEL",
@@ -46,7 +46,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.PLATFORM_API_KEY,
-  baseURL: "https://api.example.com/api/v1",
+  baseURL: "https://ai.moyinai.com/api/v1",
 });
 const stream = await client.responses.create({
   model: "YOUR_MODEL",
@@ -68,7 +68,7 @@ from anthropic import Anthropic
 
 client = Anthropic(
     api_key=os.environ["PLATFORM_API_KEY"],
-    base_url="https://api.example.com/api",
+    base_url="https://ai.moyinai.com/api",
 )
 with client.messages.stream(
     model="YOUR_MODEL",
@@ -90,7 +90,7 @@ from google.genai import types
 client = genai.Client(
     api_key=os.environ["PLATFORM_API_KEY"],
     http_options=types.HttpOptions(
-        base_url="https://api.example.com/api",
+        base_url="https://ai.moyinai.com/api",
         api_version="v1beta",
     ),
 )

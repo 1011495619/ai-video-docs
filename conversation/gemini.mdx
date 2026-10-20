@@ -1,18 +1,19 @@
 ---
 title: "Gemini GenerateContent"
 description: "使用 v1beta 模型入口，配置 contents、流式生成和 Token 统计。"
+openapi: "openapi.json POST /v1beta/models/{model}:generateContent"
 ---
 
 ## 模型与地址
 
-Gemini 使用服务根地址下的 `/v1beta`，例如 `https://api.example.com/api/v1beta`。查询 `GET /v1beta/models`，读取 `models[].name`、`baseModelId` 和 `supportedGenerationMethods`。
+Gemini 使用服务根地址下的 `/v1beta`，例如 `https://ai.moyinai.com/api/v1beta`。查询 `GET /v1beta/models`，读取 `models[].name`、`baseModelId` 和 `supportedGenerationMethods`。
 
 模型列表中的 `name` 通常是 `models/YOUR_MODEL`；示例路径已有 `/models/`，替换 `YOUR_GEMINI_MODEL` 时只填写模型 ID。Google SDK 会处理模型资源名，配置方式见 [SDK 示例](/conversation/sdk-examples)。
 
 ## 普通生成
 
 ```bash
-curl "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:generateContent" \
+curl "https://ai.moyinai.com/api/v1beta/models/YOUR_GEMINI_MODEL:generateContent" \
   -H "x-goog-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -50,7 +51,7 @@ curl "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:generateConten
 ## 流式生成
 
 ```bash
-curl -N "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:streamGenerateContent?alt=sse" \
+curl -N "https://ai.moyinai.com/api/v1beta/models/YOUR_GEMINI_MODEL:streamGenerateContent?alt=sse" \
   -H "x-goog-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"contents":[{"role":"user","parts":[{"text":"你好"}]}],"generationConfig":{"maxOutputTokens":512}}'
@@ -61,7 +62,7 @@ curl -N "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:streamGener
 ## Token 统计与向量
 
 ```bash
-curl "https://api.example.com/api/v1beta/models/YOUR_GEMINI_MODEL:countTokens" \
+curl "https://ai.moyinai.com/api/v1beta/models/YOUR_GEMINI_MODEL:countTokens" \
   -H "x-goog-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"contents":[{"role":"user","parts":[{"text":"你好"}]}]}'

@@ -1,0 +1,7 @@
+---
+title: "OpenAI 图片生成（异步）"
+description: "返回 HTTP 202 和批次 UUID；按 Retry-After 轮询 /v1/images/tasks/{taskId}。批次与单个图片任务的 ID 和查询路径不同。"
+openapi: "openapi.json POST /v1/images/generations/async"
+---
+
+参数限制、部分成功处理和同步/异步流程见 [OpenAI 图片兼容指南](/images/openai-compatible)。

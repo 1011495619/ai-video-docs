@@ -1,0 +1,56 @@
+---
+title: "在线调试 API"
+description: "填写自己的 API Key，编辑参数并直接查看 API 的真实响应。"
+---
+
+文档中的接口页面提供 **Try it** 调试区、请求参数表、响应结构和 cURL、Python、JavaScript 示例。
+
+## 开始调用
+
+<Steps>
+  <Step title="准备 API Key">
+    在 AI Video 的 API 工作台创建密钥。接口地址为 `https://ai.moyinai.com/api`；API Key 应来自该站点。
+  </Step>
+  <Step title="验证账户与模型">
+    打开[账户接口](/account)，点击 **Try it**，在认证框中填写完整 API Key，再点击 **Send**。Bearer 认证框只填写密钥，前缀由调试区添加。
+
+    查询[图片与视频模型目录](/models)或[对话模型列表](/conversation/models-and-errors)，复制当前账户可用的模型 ID。
+  </Step>
+  <Step title="填写参数并发送">
+    在目标接口填写模型、提示词和所需参数。请求区会生成对应代码；发送后在响应区查看真实 HTTP 状态和返回内容。
+
+    示例里的 `YOUR_IMAGE_MODEL`、`YOUR_CHAT_MODEL` 等是待替换的模型占位值，应填写目录中的实际 ID。
+  </Step>
+  <Step title="读取生成结果">
+    对话请求按协议读取文本；图片和视频异步接口先返回 ID，再到对应查询接口获取最终结果。HTTP 200 的任务查询仍应检查 `status`。
+  </Step>
+</Steps>
+
+<Note>
+  点击 **Send** 会向实际 API 发起请求。生成请求按账户及模型的规则消耗额度；示例响应只是结构说明。调试请求通过 Mintlify 的 API 代理发送。
+</Note>
+
+## 选择入口
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" icon="comments" href="/conversation/chat-completions">
+    发送 messages，支持完整 JSON 和 SSE 流式响应。
+  </Card>
+  <Card title="图片任务" icon="image" href="/images/create">
+    提交图片任务，使用任务 ID 查询结果。
+  </Card>
+  <Card title="视频任务" icon="video" href="/videos/create">
+    使用文字、图片或其他参考素材创建视频。
+  </Card>
+  <Card title="素材上传" icon="upload" href="/files/upload">
+    在调试区选择本地图片、视频或音频文件。
+  </Card>
+</CardGroup>
+
+## 同步、异步与流式
+
+- 对话接口将 `stream` 设为 `true` 时使用 SSE。Gemini 流式入口单独使用[流式生成](/api-reference/gemini-stream)，Query 的 `alt` 为 `sse`。
+- OpenAI 图片同步接口会等待生成结果，长时间任务可能触及调试代理的等待限制。优先使用[异步图片生成](/api-reference/image-generations-async)或[异步图片编辑](/api-reference/image-edits-async)，再[查询批次](/api-reference/get-image-batch)。
+- 单个图片任务、图片批次、视频任务、文件及 Responses 各有自己的 ID 和查询路径。使用创建或上传接口实际返回的 ID。
+
+多轮上下文、SDK 接入、任务轮询和错误处理仍可在 **接入指南** 中查阅。

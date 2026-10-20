@@ -1,6 +1,7 @@
 ---
 title: "模型列表与错误格式"
 description: "对话模型的标准列表接口和错误返回约定。"
+openapi: "openapi.json GET /v1/models"
 ---
 
 OpenAI SDK 使用 `GET /v1/models`；Anthropic SDK 使用相同入口并携带 `anthropic-version`；Gemini SDK 使用 `GET /v1beta/models`。错误按对应协议返回，不使用旧图片/视频接口的业务信封。流式连接建立前返回 JSON 错误，建立后使用协议事件发送错误。
@@ -8,7 +9,7 @@ OpenAI SDK 使用 `GET /v1/models`；Anthropic SDK 使用相同入口并携带 `
 ## OpenAI 模型列表
 
 ```bash
-curl "https://api.example.com/api/v1/models" \
+curl "https://ai.moyinai.com/api/v1/models" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -47,11 +48,11 @@ curl "https://api.example.com/api/v1/models" \
 ## Anthropic 和 Gemini 列表
 
 ```bash
-curl "https://api.example.com/api/v1/models" \
+curl "https://ai.moyinai.com/api/v1/models" \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "anthropic-version: 2023-06-01"
 
-curl "https://api.example.com/api/v1beta/models" \
+curl "https://ai.moyinai.com/api/v1beta/models" \
   -H "x-goog-api-key: YOUR_API_KEY"
 ```
 

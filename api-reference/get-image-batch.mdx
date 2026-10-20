@@ -1,0 +1,7 @@
+---
+title: "查询图片批次"
+description: "读取 processing、completed 或 failed。完成时检查 result.data、partial 和 errors；查询 HTTP 200 仍可能表示生成失败。"
+openapi: "openapi.json GET /v1/images/tasks/{taskId}"
+---
+
+参数限制、部分成功处理和同步/异步流程见 [OpenAI 图片兼容指南](/images/openai-compatible)。

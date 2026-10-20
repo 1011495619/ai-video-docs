@@ -17,6 +17,85 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "API 参考",
+        "groups": [
+          {
+            "group": "开始调试",
+            "pages": [
+              "api-reference/overview"
+            ]
+          },
+          {
+            "group": "账户与模型",
+            "pages": [
+              "account",
+              "models",
+              "conversation/models-and-errors",
+              "api-reference/get-gemini-models"
+            ]
+          },
+          {
+            "group": "素材文件",
+            "pages": [
+              "files/upload",
+              "api-reference/delete-file"
+            ]
+          },
+          {
+            "group": "图片生成",
+            "pages": [
+              "images/create",
+              "images/query"
+            ]
+          },
+          {
+            "group": "OpenAI 图片兼容",
+            "pages": [
+              "api-reference/image-generations",
+              "api-reference/image-generations-async",
+              "api-reference/image-edits",
+              "api-reference/image-edits-async",
+              "api-reference/get-image-batch"
+            ]
+          },
+          {
+            "group": "视频生成",
+            "pages": [
+              "videos/create",
+              "videos/query"
+            ]
+          },
+          {
+            "group": "对话协议",
+            "pages": [
+              "conversation/chat-completions",
+              "conversation/responses",
+              "conversation/anthropic",
+              "conversation/gemini",
+              "api-reference/gemini-stream"
+            ]
+          },
+          {
+            "group": "Responses 资源",
+            "pages": [
+              "api-reference/get-response",
+              "api-reference/delete-response",
+              "api-reference/cancel-response",
+              "api-reference/response-input-items"
+            ]
+          },
+          {
+            "group": "Token 与上下文",
+            "pages": [
+              "api-reference/compact-response",
+              "api-reference/response-input-tokens",
+              "api-reference/anthropic-count-tokens",
+              "api-reference/gemini-count-tokens"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "接入指南",
         "groups": [
           {
@@ -25,39 +104,22 @@
               "introduction",
               "quickstart",
               "api-overview",
-              "authentication",
-              "account",
-              "models",
-              "files/upload"
+              "authentication"
             ]
           },
           {
             "group": "对话模型",
             "pages": [
-              "conversation/chat-completions",
               "conversation/protocols",
-              "conversation/responses",
-              "conversation/anthropic",
-              "conversation/gemini",
               "conversation/sdk-examples",
               "conversation/websocket",
-              "conversation/models-and-errors",
               "conversation/reverse-proxy"
             ]
           },
           {
             "group": "图片生成",
             "pages": [
-              "images/create",
-              "images/query",
               "images/openai-compatible"
-            ]
-          },
-          {
-            "group": "视频生成",
-            "pages": [
-              "videos/create",
-              "videos/query"
             ]
           },
           {
@@ -101,5 +163,21 @@
       "source": "/api-provider-route-admin-guide",
       "destination": "/administration/provider-routes"
     }
-  ]
+  ],
+  "api": {
+    "playground": {
+      "display": "interactive",
+      "proxy": true
+    },
+    "url": "full",
+    "examples": {
+      "languages": [
+        "curl",
+        "python",
+        "javascript"
+      ],
+      "defaults": "required",
+      "prefill": true
+    }
+  }
 }

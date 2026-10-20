@@ -1,6 +1,7 @@
 ---
 title: "创建图片任务"
 description: "文生图、图生图、多图参考及请求字段。"
+openapi: "openapi.json POST /v1/images"
 ---
 
 接口：
@@ -12,7 +13,7 @@ POST /v1/images
 ## 文生图
 
 ```bash
-curl -X POST "https://api.example.com/api/v1/images" \
+curl -X POST "https://ai.moyinai.com/api/v1/images" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -29,7 +30,7 @@ curl -X POST "https://api.example.com/api/v1/images" \
 ## 图生图
 
 ```bash
-curl -X POST "https://api.example.com/api/v1/images" \
+curl -X POST "https://ai.moyinai.com/api/v1/images" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -49,7 +50,7 @@ curl -X POST "https://api.example.com/api/v1/images" \
 ## 多图参考
 
 ```bash
-curl -X POST "https://api.example.com/api/v1/images" \
+curl -X POST "https://ai.moyinai.com/api/v1/images" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

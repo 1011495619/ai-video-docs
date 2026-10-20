@@ -1,12 +1,13 @@
 ---
 title: "Chat Completions"
 description: "OpenAI 兼容对话、辅助接口及 Chat/Messages 协议转换。"
+openapi: "openapi.json POST /v1/chat/completions"
 ---
 
 对话模型提供 OpenAI、Anthropic、Gemini 标准协议入口。管理员可配置 Chat Completions 与 Anthropic Messages 双向 JSON/SSE 转换；其他协议目前仍依赖上游原生支持。平台按模型路由配置选择供应商，客户只需要使用平台 API Key；供应商密钥不会转发给客户。
 
 ```bash
-curl "https://api.example.com/api/v1/chat/completions" \
+curl "https://ai.moyinai.com/api/v1/chat/completions" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_MODEL","messages":[{"role":"user","content":"你好"}]}'
@@ -85,7 +86,7 @@ Chat/Messages 转换路由要求请求明确 `max_tokens`（Chat 也接受 `max_
 ## 流式响应
 
 ```bash
-curl -N "https://api.example.com/api/v1/chat/completions" \
+curl -N "https://ai.moyinai.com/api/v1/chat/completions" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

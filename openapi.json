@@ -1,0 +1,5259 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AI Video 客户 API",
+    "version": "1.0.0",
+    "description": "使用平台 API Key 查询模型、发送对话请求、上传素材以及创建图片和视频任务。生成请求实际调用模型并按账户规则计费。"
+  },
+  "servers": [
+    {
+      "url": "https://ai.moyinai.com/api",
+      "description": "AI Video 线上服务"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "get_account",
+        "summary": "账户、额度与用量",
+        "description": "查询当前平台 API Key 的额度和用户级限制。余额和账单在系统工作台查看。",
+        "tags": [
+          "账户与模型"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountEnvelope"
+                },
+                "example": {
+                  "code": 200,
+                  "message": "查询成功",
+                  "data": {
+                    "account_id": "acct_example",
+                    "status": "active",
+                    "quota": {
+                      "daily_limit": 100,
+                      "daily_used": 7,
+                      "daily_remaining": 93
+                    },
+                    "rate_limit": {
+                      "requests_per_minute": 60
+                    },
+                    "concurrency": {
+                      "max_concurrent_tasks": 5
+                    },
+                    "created_at": 1776843503
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/catalog/models": {
+      "get": {
+        "operationId": "get_catalog",
+        "summary": "图片与视频模型目录",
+        "description": "查询账户可见的公开模型 ID、价格、能力及扩展参数。生成前以此结果选择模型。",
+        "tags": [
+          "账户与模型"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "operationId": "get_models",
+        "summary": "对话模型列表",
+        "description": "查询对话模型及 supported_operations。此页面使用 OpenAI 格式；Anthropic 或 Gemini 的列表格式见接入说明。",
+        "tags": [
+          "账户与模型"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1beta/models": {
+      "get": {
+        "operationId": "get_gemini_models",
+        "summary": "Gemini 模型列表",
+        "description": "查询 Gemini 资源名和 supportedGenerationMethods。生成路径中的模型只填写 ID，不重复 models/。",
+        "tags": [
+          "账户与模型"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiModelList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "geminiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/files": {
+      "post": {
+        "operationId": "upload_file",
+        "summary": "上传图片、视频或音频",
+        "description": "上传素材后读取 url 用于生成，保存文件 UUID 用于删除。类型、大小和数量受平台配置限制，上传要求正余额。",
+        "tags": [
+          "素材文件"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "素材文件超过平台上传限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/files/{fileId}": {
+      "delete": {
+        "operationId": "delete_file",
+        "summary": "删除已上传素材",
+        "description": "删除当前账户的素材。使用上传返回的文件 UUID。",
+        "tags": [
+          "素材文件"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "上传结果的 id。"
+          }
+        ]
+      }
+    },
+    "/v1/images": {
+      "post": {
+        "operationId": "create_image",
+        "summary": "创建图片任务",
+        "description": "提交单个图片异步任务。保存 id 并通过查询接口读取最终结果。",
+        "tags": [
+          "图片生成"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "example": {
+                  "id": "task_example",
+                  "object": "image",
+                  "model": "YOUR_IMAGE_MODEL",
+                  "status": "queued",
+                  "progress": 0,
+                  "created_at": 1776843503
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateImage"
+              },
+              "example": {
+                "model": "YOUR_IMAGE_MODEL",
+                "prompt": "一张咖啡产品海报，暖色自然光"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/{taskId}": {
+      "get": {
+        "operationId": "get_image",
+        "summary": "查询图片任务",
+        "description": "按 queued / processing / completed / failed 判断结果。完成后读取 url 或 images，失败读取 error。",
+        "tags": [
+          "图片生成"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "单个图片任务 id，来自 POST /v1/images。"
+          }
+        ]
+      }
+    },
+    "/v1/images/generations": {
+      "post": {
+        "operationId": "image_generations",
+        "summary": "OpenAI 图片生成",
+        "description": "等待图片生成结束后返回 data[]。长时间生成建议使用 /async 接口，再轮询批次。",
+        "tags": [
+          "OpenAI 图片兼容"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageGeneration"
+              },
+              "example": {
+                "model": "YOUR_IMAGE_MODEL",
+                "prompt": "一张咖啡产品海报，暖色自然光",
+                "n": 1,
+                "response_format": "url"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/generations/async": {
+      "post": {
+        "operationId": "image_generations_async",
+        "summary": "OpenAI 图片生成（异步）",
+        "description": "返回 HTTP 202 和批次 UUID；按 Retry-After 轮询 /v1/images/tasks/{taskId}。批次与单个图片任务的 ID 和查询路径不同。",
+        "tags": [
+          "OpenAI 图片兼容"
+        ],
+        "responses": {
+          "202": {
+            "description": "已接受异步批次。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageBatch"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "实际批次查询路径。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "建议至少间隔 3 秒再查询。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageGeneration"
+              },
+              "example": {
+                "model": "YOUR_IMAGE_MODEL",
+                "prompt": "一张咖啡产品海报，暖色自然光",
+                "n": 1,
+                "response_format": "url"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/edits": {
+      "post": {
+        "operationId": "image_edits",
+        "summary": "OpenAI 图片编辑",
+        "description": "等待图片生成结束后返回 data[]。长时间生成建议使用对应 /async 接口，再轮询批次。选择 multipart 可上传本地参考图。",
+        "tags": [
+          "OpenAI 图片兼容"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageEdit"
+              },
+              "example": {
+                "model": "YOUR_IMAGE_MODEL",
+                "prompt": "保留主体，将背景换成浅灰色摄影棚",
+                "n": 1,
+                "response_format": "url",
+                "image": "https://example.com/reference.png"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageEditUpload"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/edits/async": {
+      "post": {
+        "operationId": "image_edits_async",
+        "summary": "OpenAI 图片编辑（异步）",
+        "description": "返回 HTTP 202 和批次 UUID；按 Retry-After 轮询 /v1/images/tasks/{taskId}。批次与单个图片任务的 ID 和查询路径不同。",
+        "tags": [
+          "OpenAI 图片兼容"
+        ],
+        "responses": {
+          "202": {
+            "description": "已接受异步批次。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageBatch"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "实际批次查询路径。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "建议至少间隔 3 秒再查询。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageEdit"
+              },
+              "example": {
+                "model": "YOUR_IMAGE_MODEL",
+                "prompt": "保留主体，将背景换成浅灰色摄影棚",
+                "n": 1,
+                "response_format": "url",
+                "image": "https://example.com/reference.png"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageEditUpload"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/tasks/{taskId}": {
+      "get": {
+        "operationId": "get_image_batch",
+        "summary": "查询图片批次",
+        "description": "读取 processing、completed 或 failed。完成时检查 result.data、partial 和 errors；查询 HTTP 200 仍可能表示生成失败。",
+        "tags": [
+          "OpenAI 图片兼容"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "异步批次返回的 id 或 task_id。"
+          }
+        ]
+      }
+    },
+    "/v1/videos": {
+      "post": {
+        "operationId": "create_video",
+        "summary": "创建视频任务",
+        "description": "提交视频异步任务，按模型能力选择时长、比例和参考素材。JSON 使用素材 URL，multipart 可上传参考图。",
+        "tags": [
+          "视频生成"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "example": {
+                  "id": "task_example",
+                  "object": "video",
+                  "model": "YOUR_VIDEO_MODEL",
+                  "status": "queued",
+                  "progress": 0,
+                  "created_at": 1776843503
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideo"
+              },
+              "example": {
+                "model": "YOUR_VIDEO_MODEL",
+                "prompt": "一只小猫在阳光下玩耍，电影感"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoUpload"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/videos/{taskId}": {
+      "get": {
+        "operationId": "get_video",
+        "summary": "查询视频任务",
+        "description": "完成后读取 video_url；失败时读取 error。created_at 等时间戳使用 Unix 秒，processing_time 为毫秒。",
+        "tags": [
+          "视频生成"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "视频创建接口实际返回的 id。"
+          }
+        ]
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "operationId": "chat_completions",
+        "summary": "Chat Completions",
+        "description": "发送 messages，读取 choices[].message。stream=true 时返回 SSE；先查询模型支持的操作。",
+        "tags": [
+          "对话协议"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE 事件流；将请求的 stream 设为 true。"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              },
+              "example": {
+                "model": "YOUR_CHAT_MODEL",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "用一句话解释异步任务"
+                  }
+                ],
+                "stream": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/responses": {
+      "post": {
+        "operationId": "create_response",
+        "summary": "OpenAI Responses",
+        "description": "发送 input，读取 output。续接、存储和后台响应依赖原生上游能力及当前模型配置。",
+        "tags": [
+          "对话协议"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponsesResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE 事件流；将请求的 stream 设为 true。"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponsesRequest"
+              },
+              "example": {
+                "model": "YOUR_RESPONSES_MODEL",
+                "input": "用一句话解释异步任务",
+                "max_output_tokens": 512,
+                "stream": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages": {
+      "post": {
+        "operationId": "anthropic_messages",
+        "summary": "Anthropic Messages",
+        "description": "系统指令放在顶层 system。max_tokens 必填；读取 content 中的 text 块。stream=true 使用 SSE。",
+        "tags": [
+          "对话协议"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnthropicResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE 事件流；将请求的 stream 设为 true。"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnthropicRequest"
+              },
+              "example": {
+                "model": "YOUR_MESSAGES_MODEL",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "用一句话解释异步任务"
+                  }
+                ],
+                "max_tokens": 512,
+                "stream": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "anthropic-version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2023-06-01"
+            },
+            "description": "Anthropic 协议版本。"
+          }
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1beta/models/{model}:generateContent": {
+      "post": {
+        "operationId": "gemini_generate",
+        "summary": "Gemini GenerateContent",
+        "description": "模型名在 URL 中。发送 contents，读取 candidates[].content.parts；用量来自 usageMetadata。",
+        "tags": [
+          "对话协议"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              },
+              "example": {
+                "contents": [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "text": "用一句话解释异步任务"
+                      }
+                    ]
+                  }
+                ],
+                "generationConfig": {
+                  "maxOutputTokens": 512
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "YOUR_GEMINI_MODEL"
+            },
+            "description": "Gemini 公开模型 ID，不含 models/ 前缀。"
+          }
+        ],
+        "security": [
+          {
+            "geminiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1beta/models/{model}:streamGenerateContent": {
+      "post": {
+        "operationId": "gemini_stream",
+        "summary": "Gemini 流式生成",
+        "description": "使用 alt=sse，按 data: JSON 事件读取文本增量及最终用量。",
+        "tags": [
+          "对话协议"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Gemini SSE JSON 事件流。"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              },
+              "example": {
+                "contents": [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "text": "用一句话解释异步任务"
+                      }
+                    ]
+                  }
+                ],
+                "generationConfig": {
+                  "maxOutputTokens": 512
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "YOUR_GEMINI_MODEL"
+            },
+            "description": "Gemini 公开模型 ID，不含 models/ 前缀。"
+          },
+          {
+            "name": "alt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sse"
+              ],
+              "default": "sse"
+            }
+          }
+        ],
+        "security": [
+          {
+            "geminiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/responses/{responseId}": {
+      "get": {
+        "operationId": "get_response",
+        "summary": "查询 Responses 响应",
+        "description": "使用原创建请求的账户与路由访问资源；查询、取消及输入项依赖上游原生 Responses 和存储能力。",
+        "tags": [
+          "Responses 资源"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponsesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "responseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "resp_example"
+            },
+            "description": "同账户通过 Responses 创建获得的实际响应 ID。"
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "delete_response",
+        "summary": "删除 Responses 响应",
+        "description": "使用原创建请求的账户与路由访问资源；依赖原生 Responses 存储能力。删除前需确认账务已完成，usage_pending 时返回 409。",
+        "tags": [
+          "Responses 资源"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "usage_pending：账务尚未核对完成，请保留响应资源。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "responseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "resp_example"
+            },
+            "description": "同账户通过 Responses 创建获得的实际响应 ID。"
+          }
+        ]
+      }
+    },
+    "/v1/responses/{responseId}/cancel": {
+      "post": {
+        "operationId": "cancel_response",
+        "summary": "取消 Responses 响应",
+        "description": "使用原创建请求的账户与路由访问资源；查询、取消及输入项依赖上游原生 Responses 和存储能力。",
+        "tags": [
+          "Responses 资源"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponsesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "responseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "resp_example"
+            },
+            "description": "同账户通过 Responses 创建获得的实际响应 ID。"
+          }
+        ]
+      }
+    },
+    "/v1/responses/{responseId}/input_items": {
+      "get": {
+        "operationId": "response_input_items",
+        "summary": "查询 Responses 输入项",
+        "description": "使用原创建请求的账户与路由访问资源；查询、取消及输入项依赖上游原生 Responses 和存储能力。",
+        "tags": [
+          "Responses 资源"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseInputItems"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "responseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "resp_example"
+            },
+            "description": "同账户通过 Responses 创建获得的实际响应 ID。"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/v1/responses/compact": {
+      "post": {
+        "operationId": "compact_response",
+        "summary": "压缩 Responses 上下文",
+        "description": "仅用于声明支持对应操作的模型和供应商。返回完整 JSON。",
+        "tags": [
+          "Token 与上下文"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponsesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponsesCompactRequest"
+              },
+              "example": {
+                "model": "YOUR_RESPONSES_MODEL",
+                "input": "用一句话解释异步任务"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/responses/input_tokens": {
+      "post": {
+        "operationId": "response_input_tokens",
+        "summary": "统计 Responses 输入 Token",
+        "description": "仅用于声明支持对应操作的模型和供应商。返回完整 JSON。",
+        "tags": [
+          "Token 与上下文"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponsesInputTokensRequest"
+              },
+              "example": {
+                "model": "YOUR_RESPONSES_MODEL",
+                "input": "用一句话解释异步任务"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/count_tokens": {
+      "post": {
+        "operationId": "anthropic_count_tokens",
+        "summary": "统计 Messages 输入 Token",
+        "description": "模型需支持 messagesCountTokens。统计请求无需 max_tokens；生成实际计费以最终用量为准。",
+        "tags": [
+          "Token 与上下文"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnthropicCountRequest"
+              },
+              "example": {
+                "model": "YOUR_MESSAGES_MODEL",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "你好"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "anthropic-version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2023-06-01"
+            },
+            "description": "Anthropic 协议版本。"
+          }
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1beta/models/{model}:countTokens": {
+      "post": {
+        "operationId": "gemini_count_tokens",
+        "summary": "统计 Gemini 输入 Token",
+        "description": "选择 supportedGenerationMethods 包含 countTokens 的模型，发送原生 contents。",
+        "tags": [
+          "Token 与上下文"
+        ],
+        "responses": {
+          "200": {
+            "description": "请求成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或协议错误。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "密钥缺失、无效、停用或跨站点使用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "余额或额度不足。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "模型、任务或资源不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "频率或并发超过限制。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务处理失败。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              },
+              "example": {
+                "contents": [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "text": "你好"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "YOUR_GEMINI_MODEL"
+            },
+            "description": "Gemini 公开模型 ID，不含 models/ 前缀。"
+          }
+        ],
+        "security": [
+          {
+            "geminiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "填写 API 工作台创建的平台 API Key，输入框只填密钥，Bearer 前缀自动添加。"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "填写平台 API Key，用于 Anthropic 兼容请求。"
+      },
+      "geminiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-goog-api-key",
+        "description": "填写平台 API Key，用于 Gemini 请求。"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ProtocolError": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Anthropic 错误类型，部分协议省略"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "param": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": true
+      },
+      "TaskError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "任务失败原因"
+          },
+          "code": {
+            "type": "string",
+            "description": "错误码"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TaskUsage": {
+        "type": "object",
+        "properties": {
+          "totalTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cachedInputTokens": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "description": "仅在取得有效最终用量时出现。"
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "保存此 ID，用于对应的图片或视频任务查询。"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "description": "公开模型名"
+          },
+          "status": {
+            "type": "string",
+            "description": "查询 HTTP 200 仍可能是 failed；按状态决定是否结束。",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "progress": {
+            "type": "number",
+            "description": "进度百分比",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "创建时间，Unix 秒"
+          },
+          "completed_at": {
+            "type": "integer",
+            "description": "完成时间，Unix 秒"
+          },
+          "failed_at": {
+            "type": "integer",
+            "description": "失败时间，Unix 秒"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "画面比例"
+          },
+          "size": {
+            "type": "string",
+            "description": "图片或视频尺寸"
+          },
+          "seconds": {
+            "type": "string",
+            "description": "视频时长，单位秒"
+          },
+          "url": {
+            "type": "string",
+            "description": "完成时的图片 URL"
+          },
+          "video_url": {
+            "type": "string",
+            "description": "完成时的视频 URL"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ]
+            },
+            "description": "供应商返回的图片结果列表，项目结构随模型而异。"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "供应商结果，可包含图片或视频地址。"
+          },
+          "processing_time": {
+            "type": "number",
+            "description": "处理耗时，毫秒"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TaskUsage"
+          },
+          "error": {
+            "$ref": "#/components/schemas/TaskError"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "model",
+          "status",
+          "progress",
+          "created_at"
+        ],
+        "additionalProperties": true
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "quota": {
+            "type": "object",
+            "properties": {
+              "daily_limit": {
+                "type": "number",
+                "nullable": true
+              },
+              "daily_used": {
+                "type": "number"
+              },
+              "daily_remaining": {
+                "type": "number",
+                "nullable": true
+              },
+              "reset_at": {
+                "type": "integer",
+                "description": "Unix 秒"
+              }
+            }
+          },
+          "rate_limit": {
+            "type": "object",
+            "properties": {
+              "requests_per_minute": {
+                "type": "integer",
+                "description": "用户级每分钟限制"
+              }
+            }
+          },
+          "concurrency": {
+            "type": "object",
+            "properties": {
+              "max_concurrent_tasks": {
+                "type": "integer",
+                "description": "用户级最大任务并发"
+              }
+            }
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix 秒"
+          }
+        }
+      },
+      "AccountEnvelope": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data"
+        ]
+      },
+      "ModelParameter": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "default": {},
+          "options": {
+            "type": "array",
+            "items": {}
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CatalogModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "用于生成请求的公开模型 ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image_generation",
+              "video_generation"
+            ]
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "per_call、per_second 等实际计费方式"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "CNY"
+                ]
+              }
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelParameter"
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CatalogEnvelope": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "models": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CatalogModel"
+                }
+              }
+            },
+            "required": [
+              "models"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data"
+        ]
+      },
+      "ConversationModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "owned_by": {
+            "type": "string"
+          },
+          "supported_operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "context_window": {
+            "type": "integer"
+          },
+          "max_output_tokens": {
+            "type": "integer"
+          },
+          "supported_transports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": true
+      },
+      "ModelList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationModel"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": true
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "文件 UUID；删除时使用此 ID。",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "file"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "description": "字节数"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix 秒"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "type",
+          "url"
+        ],
+        "additionalProperties": true
+      },
+      "FileDeleted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "file"
+            ]
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "deleted"
+        ]
+      },
+      "CreateImage": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "modelId": {
+            "type": "string",
+            "description": "内部模型 ID 别名，优先于 modelName 和 model。"
+          },
+          "modelName": {
+            "type": "string",
+            "description": "模型名称别名，优先于 model。"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "图片提示词，最大 10000 字符。",
+            "maxLength": 10000
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例，如 1:1 或 1024x1024。"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "description": "画面比例，如 16:9。"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "aspect_ratio 的兼容别名。"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "分辨率档位，如 2k。"
+          },
+          "quality": {
+            "type": "string",
+            "description": "模型支持的质量档位。"
+          },
+          "style": {
+            "type": "string",
+            "description": "模型支持的风格。"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "images 的兼容别名。"
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "videoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "videos 的兼容别名。"
+          },
+          "audios": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "audioUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "audios 的兼容别名。"
+          },
+          "mask_url": {
+            "type": "string",
+            "description": "局部重绘遮罩图 URL。"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "业务关联元数据。"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "模型公开扩展参数；字段名与值以模型目录的 tasks[].parameters 为准。"
+          },
+          "generationOptions": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "模型扩展参数兼容对象。"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "description": "model、modelName、modelId 至少提供一项。JSON 参考媒体使用 URL。",
+        "anyOf": [
+          {
+            "required": [
+              "model"
+            ]
+          },
+          {
+            "required": [
+              "modelName"
+            ]
+          },
+          {
+            "required": [
+              "modelId"
+            ]
+          }
+        ]
+      },
+      "CreateVideo": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "modelId": {
+            "type": "string",
+            "description": "内部模型 ID 别名，优先于 modelName 和 model。"
+          },
+          "modelName": {
+            "type": "string",
+            "description": "模型名称别名，优先于 model。"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "视频生成提示词。"
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例，如 1:1 或 1024x1024。"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "description": "画面比例，如 16:9。"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "aspect_ratio 的兼容别名。"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "分辨率档位，如 2k。"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "videoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "videos 的兼容别名。"
+          },
+          "audios": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "audioUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "audios 的兼容别名。"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "业务关联元数据。"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "模型公开扩展参数；字段名与值以模型目录的 tasks[].parameters 为准。"
+          },
+          "generationOptions": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "模型扩展参数兼容对象。"
+          },
+          "seconds": {
+            "type": "string",
+            "description": "正数时长，单位秒。JSON 同样接受数字；multipart 使用文本。",
+            "example": "10"
+          },
+          "duration": {
+            "type": "string",
+            "description": "seconds 的兼容别名，选择其中一个。"
+          },
+          "mode": {
+            "type": "string",
+            "description": "模型支持的生成模式。"
+          },
+          "video_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "videos 的兼容别名。"
+          },
+          "video_url": {
+            "type": "string",
+            "description": "单个参考视频 URL。"
+          },
+          "audio_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "audios 的兼容别名。"
+          },
+          "audio_url": {
+            "type": "string",
+            "description": "单个参考音频 URL。"
+          },
+          "upload_method": {
+            "type": "string",
+            "enum": [
+              "s3",
+              "oss"
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "description": "model、modelName、modelId 至少提供一项。所选模型决定支持的媒体、时长、比例和分辨率。",
+        "anyOf": [
+          {
+            "required": [
+              "model"
+            ]
+          },
+          {
+            "required": [
+              "modelName"
+            ]
+          },
+          {
+            "required": [
+              "modelId"
+            ]
+          }
+        ]
+      },
+      "CreateVideoUpload": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "modelId": {
+            "type": "string",
+            "description": "内部模型 ID 别名，优先于 modelName 和 model。"
+          },
+          "modelName": {
+            "type": "string",
+            "description": "模型名称别名，优先于 model。"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "视频生成提示词。"
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例，如 1:1 或 1024x1024。"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "description": "画面比例，如 16:9。"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "aspect_ratio 的兼容别名。"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "分辨率档位，如 2k。"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "videoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "videos 的兼容别名。"
+          },
+          "audios": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "HTTP(S) URL"
+            },
+            "description": "参考素材 URL 数组；先上传素材可以取得可复用 URL。"
+          },
+          "audioUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "audios 的兼容别名。"
+          },
+          "metadata": {
+            "type": "string",
+            "description": "JSON 文本，例如 {\"order_id\":\"order_123\"}。"
+          },
+          "parameters": {
+            "type": "string",
+            "description": "JSON 文本，例如 {\"order_id\":\"order_123\"}。"
+          },
+          "generationOptions": {
+            "type": "string",
+            "description": "JSON 文本，例如 {\"order_id\":\"order_123\"}。"
+          },
+          "seconds": {
+            "type": "string",
+            "description": "正数时长，单位秒。JSON 同样接受数字；multipart 使用文本。",
+            "example": "10"
+          },
+          "duration": {
+            "type": "string",
+            "description": "seconds 的兼容别名，选择其中一个。"
+          },
+          "mode": {
+            "type": "string",
+            "description": "模型支持的生成模式。"
+          },
+          "video_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "videos 的兼容别名。"
+          },
+          "video_url": {
+            "type": "string",
+            "description": "单个参考视频 URL。"
+          },
+          "audio_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "audios 的兼容别名。"
+          },
+          "audio_url": {
+            "type": "string",
+            "description": "单个参考音频 URL。"
+          },
+          "upload_method": {
+            "type": "string",
+            "enum": [
+              "s3",
+              "oss"
+            ]
+          },
+          "input_reference": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "description": "参考图片文件，多图重复同一字段。"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "model"
+            ]
+          },
+          {
+            "required": [
+              "modelName"
+            ]
+          },
+          {
+            "required": [
+              "modelId"
+            ]
+          }
+        ]
+      },
+      "ImageGeneration": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "非空提示词。",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "n": {
+            "type": "integer",
+            "description": "生成数量，每张图片创建独立任务并计费。",
+            "minimum": 1,
+            "maximum": 128,
+            "default": 1
+          },
+          "response_format": {
+            "type": "string",
+            "description": "url 返回地址；b64_json 返回图片字节的 Base64。",
+            "enum": [
+              "url",
+              "b64_json"
+            ],
+            "default": "url"
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例。"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "style": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
+          },
+          "moderation": {
+            "type": "string"
+          },
+          "output_format": {
+            "type": "string"
+          },
+          "input_fidelity": {
+            "type": "string"
+          },
+          "output_compression": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "user": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "此图片协议返回完整 JSON，使用 false。",
+            "default": false
+          }
+        },
+        "required": [
+          "model",
+          "prompt"
+        ]
+      },
+      "ImageEdit": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "非空提示词。",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "n": {
+            "type": "integer",
+            "description": "生成数量，每张图片创建独立任务并计费。",
+            "minimum": 1,
+            "maximum": 128,
+            "default": 1
+          },
+          "response_format": {
+            "type": "string",
+            "description": "url 返回地址；b64_json 返回图片字节的 Base64。",
+            "enum": [
+              "url",
+              "b64_json"
+            ],
+            "default": "url"
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例。"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "style": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
+          },
+          "moderation": {
+            "type": "string"
+          },
+          "output_format": {
+            "type": "string"
+          },
+          "input_fidelity": {
+            "type": "string"
+          },
+          "output_compression": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "user": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "此图片协议返回完整 JSON，使用 false。",
+            "default": false
+          },
+          "image": {
+            "type": "string",
+            "description": "一张参考图的 HTTP(S) URL 或图片 Data URL。"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "多张参考图 URL，最多 16 张，还受所选模型上限约束。",
+            "maxItems": 16
+          },
+          "mask": {
+            "type": "string",
+            "description": "遮罩图 URL 或图片 Data URL。"
+          }
+        },
+        "required": [
+          "model",
+          "prompt"
+        ],
+        "description": "image 或 images 至少提供一项。",
+        "anyOf": [
+          {
+            "required": [
+              "image"
+            ]
+          },
+          {
+            "required": [
+              "images"
+            ]
+          }
+        ]
+      },
+      "ImageEditUpload": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "非空提示词。",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "n": {
+            "type": "integer",
+            "description": "生成数量，每张图片创建独立任务并计费。",
+            "minimum": 1,
+            "maximum": 128,
+            "default": 1
+          },
+          "response_format": {
+            "type": "string",
+            "description": "url 返回地址；b64_json 返回图片字节的 Base64。",
+            "enum": [
+              "url",
+              "b64_json"
+            ],
+            "default": "url"
+          },
+          "size": {
+            "type": "string",
+            "description": "模型支持的尺寸或比例。"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "style": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
+          },
+          "moderation": {
+            "type": "string"
+          },
+          "output_format": {
+            "type": "string"
+          },
+          "input_fidelity": {
+            "type": "string"
+          },
+          "output_compression": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "user": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "此图片协议返回完整 JSON，使用 false。",
+            "default": false
+          },
+          "image": {
+            "type": "string",
+            "description": "单个参考图文件。",
+            "format": "binary"
+          },
+          "image[]": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "description": "多个参考图文件，可重复该字段。",
+            "maxItems": 16
+          },
+          "mask": {
+            "type": "string",
+            "description": "可选遮罩图文件。",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "model",
+          "prompt"
+        ],
+        "description": "image 或 image[] 至少提供一个文件。",
+        "anyOf": [
+          {
+            "required": [
+              "image"
+            ]
+          },
+          {
+            "required": [
+              "image[]"
+            ]
+          }
+        ]
+      },
+      "ImageResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "b64_json": {
+                  "type": "string"
+                },
+                "revised_prompt": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "task_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "partial": {
+            "type": "boolean"
+          },
+          "requested": {
+            "type": "integer"
+          },
+          "submitted": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "task_id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "created",
+          "data"
+        ],
+        "additionalProperties": true
+      },
+      "ImageBatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "image.generation.task"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix 秒，默认有效期约 24 小时。"
+          },
+          "completed_at": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "failed_at": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "poll_url": {
+            "type": "string"
+          },
+          "http_status": {
+            "type": "integer"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ImageResult"
+          },
+          "error": {
+            "$ref": "#/components/schemas/TaskError"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": true
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "按模型支持的协议角色填写。",
+            "enum": [
+              "system",
+              "developer",
+              "user",
+              "assistant",
+              "tool"
+            ]
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ],
+            "nullable": true,
+            "description": "文本或包含图片、音频等的原生内容块。"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tool_call_id": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": true
+      },
+      "TokenUsage": {
+        "type": "object",
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          },
+          "input_tokens": {
+            "type": "integer"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "cached_tokens": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 1
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "true 使用 SSE。",
+            "default": false
+          },
+          "stream_options": {
+            "type": "object",
+            "properties": {
+              "include_usage": {
+                "type": "boolean"
+              }
+            }
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "输出上限；与 max_completion_tokens 按模型支持选择。",
+            "minimum": 1
+          },
+          "max_completion_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "top_p": {
+            "type": "number"
+          },
+          "stop": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {},
+          "response_format": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "model",
+          "messages"
+        ],
+        "additionalProperties": true
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Unix 秒"
+          },
+          "model": {
+            "type": "string"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "message": {
+                  "$ref": "#/components/schemas/ChatMessage"
+                },
+                "finish_reason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "choices"
+        ],
+        "additionalProperties": true
+      },
+      "ResponsesRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ],
+            "description": "文本或 Responses 原生输入项。"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stream": {
+            "type": "boolean",
+            "default": false
+          },
+          "previous_response_id": {
+            "type": "string",
+            "description": "同账户已保存的响应 ID；上游需支持续接。"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {},
+          "store": {
+            "type": "boolean"
+          },
+          "background": {
+            "type": "boolean",
+            "description": "仅在上游支持后台响应时启用。"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "text": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reasoning": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ],
+        "additionalProperties": true
+      },
+      "ResponsesResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "error": {
+            "$ref": "#/components/schemas/TaskError"
+          },
+          "incomplete_details": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "AnthropicMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": true
+      },
+      "AnthropicRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnthropicMessage"
+            },
+            "minItems": 1
+          },
+          "system": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "thinking": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "必填输出上限，遵守模型限制。",
+            "minimum": 1
+          },
+          "stream": {
+            "type": "boolean",
+            "default": false
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "top_p": {
+            "type": "number"
+          },
+          "stop_sequences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "model",
+          "messages",
+          "max_tokens"
+        ],
+        "additionalProperties": true
+      },
+      "AnthropicCountRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnthropicMessage"
+            },
+            "minItems": 1
+          },
+          "system": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "thinking": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "model",
+          "messages"
+        ],
+        "additionalProperties": true
+      },
+      "AnthropicResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "stop_reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "stop_sequence": {
+            "type": "string",
+            "nullable": true
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "additionalProperties": true
+      },
+      "GeminiContent": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "model"
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "inlineData": {
+                  "type": "object",
+                  "properties": {
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "string",
+                      "description": "Base64 编码"
+                    }
+                  }
+                },
+                "fileData": {
+                  "type": "object",
+                  "properties": {
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "fileUri": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": true
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "parts"
+        ],
+        "additionalProperties": true
+      },
+      "GeminiRequest": {
+        "type": "object",
+        "properties": {
+          "contents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeminiContent"
+            },
+            "minItems": 1
+          },
+          "systemInstruction": {
+            "$ref": "#/components/schemas/GeminiContent"
+          },
+          "generationConfig": {
+            "type": "object",
+            "properties": {
+              "maxOutputTokens": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "topP": {
+                "type": "number"
+              },
+              "responseMimeType": {
+                "type": "string"
+              },
+              "responseSchema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "toolConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "safetySettings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "contents"
+        ],
+        "additionalProperties": true
+      },
+      "GeminiResponse": {
+        "type": "object",
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "$ref": "#/components/schemas/GeminiContent"
+                },
+                "finishReason": {
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "usageMetadata": {
+            "type": "object",
+            "properties": {
+              "promptTokenCount": {
+                "type": "integer"
+              },
+              "candidatesTokenCount": {
+                "type": "integer"
+              },
+              "totalTokenCount": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": true
+          },
+          "promptFeedback": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "GeminiModelList": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "models/ 前缀的资源名"
+                },
+                "baseModelId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "supportedGenerationMethods": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ResponseDeleted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResponseInputItems": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "first_id": {
+            "type": "string"
+          },
+          "last_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "InputTokens": {
+        "type": "object",
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": true
+      },
+      "ResponsesCompactRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ],
+            "description": "文本或 Responses 原生输入项。"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "previous_response_id": {
+            "type": "string",
+            "description": "同账户已保存的响应 ID；上游需支持续接。"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {},
+          "store": {
+            "type": "boolean"
+          },
+          "background": {
+            "type": "boolean",
+            "description": "仅在上游支持后台响应时启用。"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "text": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reasoning": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ],
+        "additionalProperties": true
+      },
+      "ResponsesInputTokensRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "查询模型目录，填写当前账户可用的公开模型 ID。",
+            "example": "YOUR_MODEL"
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ],
+            "description": "文本或 Responses 原生输入项。"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "previous_response_id": {
+            "type": "string",
+            "description": "同账户已保存的响应 ID；上游需支持续接。"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_choice": {},
+          "store": {
+            "type": "boolean"
+          },
+          "background": {
+            "type": "boolean",
+            "description": "仅在上游支持后台响应时启用。"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "text": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reasoning": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ],
+        "additionalProperties": true
+      },
+      "GeminiTokens": {
+        "type": "object",
+        "properties": {
+          "totalTokens": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

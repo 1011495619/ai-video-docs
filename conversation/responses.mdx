@@ -1,6 +1,7 @@
 ---
 title: "OpenAI Responses"
 description: "使用 input 发起生成，读取 output、SSE 事件，并按响应 ID 续接或查询。"
+openapi: "openapi.json POST /v1/responses"
 ---
 
 ## 创建响应
@@ -8,7 +9,7 @@ description: "使用 input 发起生成，读取 output、SSE 事件，并按响
 使用 `/v1/models` 中 `supported_operations` 包含 `responses` 的模型。普通响应读取 `output`，使用 OpenAI SDK 时可直接访问 `output_text` 聚合文本。
 
 ```bash
-curl "https://api.example.com/api/v1/responses" \
+curl "https://ai.moyinai.com/api/v1/responses" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -52,7 +53,7 @@ curl "https://api.example.com/api/v1/responses" \
 ## 流式事件
 
 ```bash
-curl -N "https://api.example.com/api/v1/responses" \
+curl -N "https://ai.moyinai.com/api/v1/responses" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_RESPONSES_MODEL","input":"你好","max_output_tokens":256,"stream":true}'
@@ -93,10 +94,10 @@ data: {"type":"response.completed","response":{"id":"resp_example","status":"com
 | 删除 | `DELETE /v1/responses/{responseId}` | 删除上游资源；账务待核对时可能返回 `409 usage_pending` |
 
 ```bash
-curl "https://api.example.com/api/v1/responses/resp_example" \
+curl "https://ai.moyinai.com/api/v1/responses/resp_example" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
-curl -X POST "https://api.example.com/api/v1/responses/resp_example/cancel" \
+curl -X POST "https://ai.moyinai.com/api/v1/responses/resp_example/cancel" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

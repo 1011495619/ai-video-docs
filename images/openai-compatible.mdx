@@ -7,6 +7,8 @@ description: "通过标准 generations、edits 获取图片，或提交异步批
 
 ## 选择同步或异步
 
+在线调试：[同步生成](/api-reference/image-generations)、[同步编辑](/api-reference/image-edits)、[异步生成](/api-reference/image-generations-async)、[异步编辑](/api-reference/image-edits-async)、[批次查询](/api-reference/get-image-batch)。
+
 | 方式 | 创建接口 | 查询与结果 |
 | --- | --- | --- |
 | 等待结果 | `/v1/images/generations`、`/v1/images/edits` | HTTP 请求等待后返回 `data[]` |
@@ -18,7 +20,7 @@ description: "通过标准 generations、edits 获取图片，或提交异步批
 ## 文生图
 
 ```bash
-curl "https://api.example.com/api/v1/images/generations" \
+curl "https://ai.moyinai.com/api/v1/images/generations" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,7 +64,7 @@ curl "https://api.example.com/api/v1/images/generations" \
 本地文件使用 multipart，客户端自动生成 Content-Type 和 boundary：
 
 ```bash
-curl "https://api.example.com/api/v1/images/edits" \
+curl "https://ai.moyinai.com/api/v1/images/edits" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "model=YOUR_IMAGE_MODEL" \
   -F "prompt=保留主体，把背景替换为浅灰色摄影棚" \
@@ -76,7 +78,7 @@ curl "https://api.example.com/api/v1/images/edits" \
 也可使用 JSON 的 HTTP(S) URL；此兼容编辑入口另外接受 `data:image/png;base64,...` 等图片 Data URL。
 
 ```bash
-curl "https://api.example.com/api/v1/images/edits" \
+curl "https://ai.moyinai.com/api/v1/images/edits" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,7 +95,7 @@ curl "https://api.example.com/api/v1/images/edits" \
 ## 异步批次
 
 ```bash
-curl -i "https://api.example.com/api/v1/images/generations/async" \
+curl -i "https://ai.moyinai.com/api/v1/images/generations/async" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_IMAGE_MODEL","prompt":"一张极简产品海报","n":2,"response_format":"url"}'
@@ -116,7 +118,7 @@ curl -i "https://api.example.com/api/v1/images/generations/async" \
 使用实际返回的批次 ID 查询：
 
 ```bash
-curl "https://api.example.com/api/v1/images/tasks/IMAGE_REQUEST_UUID" \
+curl "https://ai.moyinai.com/api/v1/images/tasks/IMAGE_REQUEST_UUID" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

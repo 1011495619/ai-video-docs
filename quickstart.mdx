@@ -10,19 +10,19 @@ description: "创建密钥、配置 Base URL，检查账户并完成第一次对
 工作台和 OpenAI SDK 使用的 Base URL **包含 `/v1`**：
 
 ```text
-https://api.example.com/api/v1
+https://ai.moyinai.com/api/v1
 ```
 
-本文用 `API_BASE_URL` 表示这个地址。追加 `/models` 后得到 `https://api.example.com/api/v1/models`，请避免再次追加 `/v1`。
+本文用 `API_BASE_URL` 表示这个地址。追加 `/models` 后得到 `https://ai.moyinai.com/api/v1/models`，请避免再次追加 `/v1`。
 
-文档中 `POST /v1/images` 等路径是相对于服务根地址的完整路径。线上服务根地址通常是 `https://api.example.com/api`，本地直连地址可能没有 `/api`；以工作台显示的地址为准。Anthropic、Gemini SDK 的版本前缀处理方式见 [SDK 示例](/conversation/sdk-examples)。文档网站域名用于阅读指南，API 请求仍发送到系统接口地址。
+文档中 `POST /v1/images` 等路径是相对于服务根地址的完整路径。线上服务根地址通常是 `https://ai.moyinai.com/api`，本地直连地址可能没有 `/api`；以工作台显示的地址为准。Anthropic、Gemini SDK 的版本前缀处理方式见 [SDK 示例](/conversation/sdk-examples)。文档网站域名用于阅读指南，API 请求仍发送到系统接口地址。
 
 ## 1. 设置环境变量
 
 在自己的终端填写下面的值；后续命令复用同一组配置：
 
 ```bash
-export API_BASE_URL="https://api.example.com/api/v1"
+export API_BASE_URL="https://ai.moyinai.com/api/v1"
 export PLATFORM_API_KEY="YOUR_API_KEY"
 ```
 
@@ -103,7 +103,7 @@ Content-Type: application/json
 
 ```bash
 # 1. 创建视频任务
-curl -X POST "https://api.example.com/api/v1/videos" \
+curl -X POST "https://ai.moyinai.com/api/v1/videos" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -115,7 +115,7 @@ curl -X POST "https://api.example.com/api/v1/videos" \
   }'
 
 # 2. 查询视频任务
-curl -X GET "https://api.example.com/api/v1/videos/task_xxx" \
+curl -X GET "https://ai.moyinai.com/api/v1/videos/task_xxx" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -123,7 +123,7 @@ curl -X GET "https://api.example.com/api/v1/videos/task_xxx" \
 
 ```bash
 # 1. 创建图片任务
-curl -X POST "https://api.example.com/api/v1/images" \
+curl -X POST "https://ai.moyinai.com/api/v1/images" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -134,7 +134,7 @@ curl -X POST "https://api.example.com/api/v1/images" \
   }'
 
 # 2. 查询图片任务
-curl -X GET "https://api.example.com/api/v1/images/task_xxx" \
+curl -X GET "https://ai.moyinai.com/api/v1/images/task_xxx" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

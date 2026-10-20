@@ -58,6 +58,10 @@ mint broken-links
 
 原应用仓库 `client/public/docs/openapi-integration-guide.md` 已拆分为快速开始、鉴权、模型、账户、上传、对话协议、SDK、图像、视频、任务状态和错误处理页面。原供应商说明位于 `administration/provider-routes.mdx`。应用仓库内的 `mintlify/` 副本已移除，后续内容变更统一在此维护。
 
-后续若加入 OpenAPI JSON/YAML 生成接口参考，应从应用 Swagger 数据中筛选客户接口后再发布；现有 `/api-docs-json` 包含后台接口。
+`openapi.json` 维护客户 API 的请求、响应和认证结构。`API 参考` 页面通过 `openapi: "openapi.json METHOD /path"` 绑定接口，在保留正文的同时展示 Mintlify 交互式调试区。
+
+当前包含 28 个客户接口，覆盖账户与模型、素材上传删除、对话协议、图片和视频任务、OpenAI 图片批次、Responses 资源和 Token 统计。默认 API 服务根地址为 `https://ai.moyinai.com/api`，路径中已包含 `/v1` 或 `/v1beta`，避免重复拼接版本前缀。
+
+调试区使用 Mintlify API 代理，并提供 cURL、Python 和 JavaScript 示例。修改接口时同步维护 `openapi.json` 和对应 MDX 页面；不要直接发布包含后台接口的完整 Swagger 导出。
 
 官方说明：[GitHub 部署](https://www.mintlify.com/docs/deploy/github)、[自定义域名](https://www.mintlify.com/docs/customize/custom-domain)、[子路径部署](https://www.mintlify.com/docs/deploy/docs-subpath)。

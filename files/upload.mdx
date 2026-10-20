@@ -1,6 +1,7 @@
 ---
 title: "上传与删除素材"
 description: "将本地图片、视频和音频上传为可供生成任务引用的素材。"
+openapi: "openapi.json POST /v1/files"
 ---
 
 本地图片、视频或音频可以先上传为长期素材，再将返回的 URL 用于图片或视频生成请求。
@@ -16,7 +17,7 @@ POST /v1/files
 请求使用 `multipart/form-data`，文件字段名固定为 `file`：
 
 ```bash
-curl -X POST "https://api.example.com/api/v1/files" \
+curl -X POST "https://ai.moyinai.com/api/v1/files" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@/path/to/reference.mp4"
 ```
@@ -56,7 +57,7 @@ curl -X POST "https://api.example.com/api/v1/files" \
 不再使用的素材可以由原 API 客户删除：
 
 ```bash
-curl -X DELETE "https://api.example.com/api/v1/files/01234567-89ab-4cde-8f01-23456789abcd" \
+curl -X DELETE "https://ai.moyinai.com/api/v1/files/01234567-89ab-4cde-8f01-23456789abcd" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -90,7 +91,7 @@ curl -X DELETE "https://api.example.com/api/v1/files/01234567-89ab-4cde-8f01-234
 服务根地址下的公开配置入口返回当前平台限制：
 
 ```bash
-curl "https://api.example.com/api/system-config/public/upload-limits"
+curl "https://ai.moyinai.com/api/system-config/public/upload-limits"
 ```
 
 读取 `data.assetImage.maxSizeMb`、`data.assetVideo.maxSizeMb`、`data.assetAudio.maxSizeMb`。`/v1/files` 使用素材上传限制；视频创建接口直接上传 `input_reference` 时使用 `data.openApiImage` 的 API 图片配置。代理或网关也可能设有更低的请求体上限。
