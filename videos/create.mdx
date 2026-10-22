@@ -4,6 +4,10 @@ description: "文生视频、图生视频、多媒体参考和上传参数。"
 openapi: "openapi.json POST /v1/videos"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 接口：
 
 ```text
@@ -13,8 +17,8 @@ POST /v1/videos
 ## 文生视频
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "sora-2",
@@ -31,8 +35,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/videos" \
 ## 图生视频
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "sora-2",
@@ -54,8 +58,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/videos" \
 部分模型支持参考视频或参考音频。是否支持以 `/v1/catalog/models` 返回的模型参数为准。
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "sora-2",
@@ -74,8 +78,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/videos" \
 ## 使用 Form-Data 上传参考图
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -F "model=sora-2" \
   -F "prompt=让参考图中的人物自然走动，电影感" \
   -F "aspect_ratio=16:9" \
@@ -129,8 +133,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/videos" \
 本地参考图字段为 `input_reference`，多图可以重复该字段，数量受平台上传配置和模型能力约束。对象字段 `metadata`、`parameters` 使用 JSON 文本，例如：
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -F "model=YOUR_VIDEO_MODEL" \
   -F "prompt=让参考图中的主体自然移动" \
   -F 'metadata={"order_id":"order_10003"}' \

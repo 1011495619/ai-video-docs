@@ -3,11 +3,11 @@ title: "SSE 与 WebSocket 代理"
 description: "为流式响应和 WebSocket 配置反向代理。"
 ---
 
-反向代理需要关闭 SSE 缓冲，并为 WebSocket 保留升级头。Nginx 示例：
+反向代理需要关闭 SSE 缓冲，并为 WebSocket 保留升级头。对外前缀与后端前缀可以不同，下面示例将客户对外的 `/gateway/` 转发到后端的 `/api/`：
 
 ```nginx
-location /api/ {
-    proxy_pass http://backend;
+location /gateway/ {
+    proxy_pass http://backend/api/;
     proxy_http_version 1.1;
     proxy_buffering off;
     proxy_request_buffering off;
@@ -18,4 +18,8 @@ location /api/ {
 }
 ```
 
-如果代理按路径拆分配置，至少要让 `/api/v1/chat/completions`、`/api/v1/responses` 和 `/api/v1/realtime` 使用同一组长连接及升级规则。
+`location` 使用客户实际的对外前缀：可以是 `/api/`、`/gateway/`、多层路径或根路径 `/`。`proxy_pass` 的主机和路径使用后端实际监听的地址，上例中的 `backend` 和 `/api/` 是示例配置。两个路径末尾的 `/` 使 Nginx 用上游路径替换对外前缀，同时保留后续 `/v1/...` 接口路径。
+
+文档调试区的 `baseUrl` 和终端的 `API_BASE_URL` 都填写对外根地址，而非上游内部地址。上例对应 `https://api.customer.example/gateway`；客户使用根路径时则填写 `https://api.customer.example`。
+
+如果代理按接口拆分配置，将 `/v1/chat/completions`、`/v1/responses` 和 `/v1/realtime` 接在实际对外根地址之后，并让这些请求使用同一组长连接及升级规则。

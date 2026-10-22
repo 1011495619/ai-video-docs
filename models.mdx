@@ -4,13 +4,17 @@ description: "查询可用模型、价格、任务类型和公开参数。"
 openapi: "openapi.json GET /v1/catalog/models"
 ---
 
+import ApiConnection from "./snippets/api-connection.mdx";
+
+<ApiConnection />
+
 图片/视频的价格与参数目录使用 `/v1/catalog/models`。通用 SDK 的 `/v1/models` 返回标准 OpenAI 模型列表（`object`、`data`）；Claude 请求携带 `anthropic-version`，Gemini 使用 `/v1beta/models`。原先读取 `/v1/models` 中 `data.models` 的集成请迁移到 `/v1/catalog/models`。
 
 ## 请求
 
 ```bash
-curl -X GET "https://ai.moyinai.com/api/v1/catalog/models" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X GET "${API_BASE_URL}/v1/catalog/models" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 ## 响应示例

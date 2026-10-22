@@ -4,13 +4,17 @@ description: "使用 input 发起生成，读取 output、SSE 事件，并按响
 openapi: "openapi.json POST /v1/responses"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 ## 创建响应
 
 使用 `/v1/models` 中 `supported_operations` 包含 `responses` 的模型。普通响应读取 `output`，使用 OpenAI SDK 时可直接访问 `output_text` 聚合文本。
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/responses" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/responses" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "YOUR_RESPONSES_MODEL",
@@ -53,8 +57,8 @@ curl "https://ai.moyinai.com/api/v1/responses" \
 ## 流式事件
 
 ```bash
-curl -N "https://ai.moyinai.com/api/v1/responses" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -N "${API_BASE_URL}/v1/responses" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_RESPONSES_MODEL","input":"你好","max_output_tokens":256,"stream":true}'
 ```
@@ -94,11 +98,11 @@ data: {"type":"response.completed","response":{"id":"resp_example","status":"com
 | 删除 | `DELETE /v1/responses/{responseId}` | 删除上游资源；账务待核对时可能返回 `409 usage_pending` |
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/responses/resp_example" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl "${API_BASE_URL}/v1/responses/resp_example" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 
-curl -X POST "https://ai.moyinai.com/api/v1/responses/resp_example/cancel" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X POST "${API_BASE_URL}/v1/responses/resp_example/cancel" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 这些 ID 使用 Responses 资源路径查询，图片和视频任务则使用各自的任务查询路径。其他辅助入口 `/v1/responses/compact`、`/v1/responses/input_tokens` 也依赖模型声明的操作和供应商支持，使用前先核对模型目录。

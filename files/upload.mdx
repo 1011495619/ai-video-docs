@@ -4,6 +4,10 @@ description: "将本地图片、视频和音频上传为可供生成任务引用
 openapi: "openapi.json POST /v1/files"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 本地图片、视频或音频可以先上传为长期素材，再将返回的 URL 用于图片或视频生成请求。
 
 上传接口要求 API Key 所属账户余额大于 0。余额不足时返回 `402`，服务端不会接收或保存文件；删除已有素材不受余额限制。
@@ -17,8 +21,8 @@ POST /v1/files
 请求使用 `multipart/form-data`，文件字段名固定为 `file`：
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/files" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/files" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -F "file=@/path/to/reference.mp4"
 ```
 
@@ -57,8 +61,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/files" \
 不再使用的素材可以由原 API 客户删除：
 
 ```bash
-curl -X DELETE "https://ai.moyinai.com/api/v1/files/01234567-89ab-4cde-8f01-23456789abcd" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X DELETE "${API_BASE_URL}/v1/files/01234567-89ab-4cde-8f01-23456789abcd" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 删除成功响应：
@@ -91,20 +95,20 @@ curl -X DELETE "https://ai.moyinai.com/api/v1/files/01234567-89ab-4cde-8f01-2345
 服务根地址下的公开配置入口返回当前平台限制：
 
 ```bash
-curl "https://ai.moyinai.com/api/system-config/public/upload-limits"
+curl "${API_BASE_URL}/system-config/public/upload-limits"
 ```
 
 读取 `data.assetImage.maxSizeMb`、`data.assetVideo.maxSizeMb`、`data.assetAudio.maxSizeMb`。`/v1/files` 使用素材上传限制；视频创建接口直接上传 `input_reference` 时使用 `data.openApiImage` 的 API 图片配置。代理或网关也可能设有更低的请求体上限。
 
 ## Python 上传后创建图片任务
 
-设置 `API_BASE_URL` 为含 `/v1` 的工作台地址，模型支持参考图时可使用：
+设置 `API_BASE_URL` 为不含版本段的完整服务根地址，另设置 `GENERATION_MODEL` 为支持参考图的公开模型 ID：
 
 ```python
 import os
 import requests
 
-base = os.environ["API_BASE_URL"].rstrip("/")
+base = os.environ["API_BASE_URL"].rstrip("/") + "/v1"
 headers = {"Authorization": f"Bearer {os.environ['PLATFORM_API_KEY']}"}
 with open("reference.png", "rb") as source:
     uploaded = requests.post(

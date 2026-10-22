@@ -4,6 +4,10 @@ description: "文生图、图生图、多图参考及请求字段。"
 openapi: "openapi.json POST /v1/images"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 接口：
 
 ```text
@@ -13,8 +17,8 @@ POST /v1/images
 ## 文生图
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/images" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/images" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image2",
@@ -30,8 +34,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/images" \
 ## 图生图
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/images" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/images" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image2",
@@ -50,8 +54,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/images" \
 ## 多图参考
 
 ```bash
-curl -X POST "https://ai.moyinai.com/api/v1/images" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/images" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image2",

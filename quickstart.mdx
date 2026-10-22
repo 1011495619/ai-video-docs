@@ -3,33 +3,32 @@ title: "快速开始"
 description: "创建密钥、配置 Base URL，检查账户并完成第一次对话或生成任务。"
 ---
 
+import ApiConnection from "./snippets/api-connection.mdx";
+
 ## Base URL
 
-在系统的 API 工作台创建 API Key，复制工作台显示的接口地址。示例域名 `api.example.com` 和模型名仅作演示，请使用你所在站点的地址与模型目录返回的公开模型名。
+在系统的 API 工作台创建 API Key，核对当前站点对外提供的接口地址。本文统一用 `API_BASE_URL` 表示**完整服务根地址，不含 `/v1` 或 `/v1beta`**，与在线调试区的 `baseUrl` 含义相同。
 
-工作台和 OpenAI SDK 使用的 Base URL **包含 `/v1`**：
+| 部署方式 | `API_BASE_URL` 示例 | 账户请求 |
+| --- | --- | --- |
+| `/api` 前缀 | `https://api.customer.example/api` | `https://api.customer.example/api/v1/account` |
+| Nginx 自定义前缀 | `https://api.customer.example/gateway` | `https://api.customer.example/gateway/v1/account` |
+| 根路径 | `https://api.customer.example` | `https://api.customer.example/v1/account` |
 
-```text
-https://ai.moyinai.com/api/v1
-```
+表中地址仅演示拼接方式。若工作台复制的 OpenAI SDK 地址已经包含末尾 `/v1`，先移除这个版本段，再设置 `API_BASE_URL`；保留域名、端口和实际代理前缀。OpenAI SDK 使用根地址加 `/v1`，Anthropic、Gemini SDK 的区别见 [SDK 示例](/conversation/sdk-examples)。
 
-本文用 `API_BASE_URL` 表示这个地址。追加 `/models` 后得到 `https://ai.moyinai.com/api/v1/models`，请避免再次追加 `/v1`。
-
-文档中 `POST /v1/images` 等路径是相对于服务根地址的完整路径。线上服务根地址通常是 `https://ai.moyinai.com/api`，本地直连地址可能没有 `/api`；以工作台显示的地址为准。Anthropic、Gemini SDK 的版本前缀处理方式见 [SDK 示例](/conversation/sdk-examples)。文档网站域名用于阅读指南，API 请求仍发送到系统接口地址。
+文档中 `POST /v1/images` 等路径都追加在这个根地址之后，`/api` 由客户实际部署决定。文档网站域名用于阅读指南，API 请求发送到客户自己的服务地址。
 
 ## 1. 设置环境变量
 
-在自己的终端填写下面的值；后续命令复用同一组配置：
+在自己的终端设置完整根地址和密钥，后续命令复用同一组配置：
 
-```bash
-export API_BASE_URL="https://ai.moyinai.com/api/v1"
-export PLATFORM_API_KEY="YOUR_API_KEY"
-```
+<ApiConnection />
 
 ## 2. 验证密钥与账户
 
 ```bash
-curl --fail-with-body "$API_BASE_URL/account" \
+curl --fail-with-body "${API_BASE_URL}/v1/account" \
   -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
@@ -40,7 +39,7 @@ curl --fail-with-body "$API_BASE_URL/account" \
 <Tabs>
   <Tab title="对话模型">
 ```bash
-curl --fail-with-body "$API_BASE_URL/models" \
+curl --fail-with-body "${API_BASE_URL}/v1/models" \
   -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
@@ -48,7 +47,7 @@ curl --fail-with-body "$API_BASE_URL/models" \
   </Tab>
   <Tab title="图片与视频模型">
 ```bash
-curl --fail-with-body "$API_BASE_URL/catalog/models" \
+curl --fail-with-body "${API_BASE_URL}/v1/catalog/models" \
   -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
@@ -61,7 +60,7 @@ curl --fail-with-body "$API_BASE_URL/catalog/models" \
 把 `YOUR_CHAT_MODEL` 替换为上一步返回且支持 `chat` 的模型名：
 
 ```bash
-curl --fail-with-body "$API_BASE_URL/chat/completions" \
+curl --fail-with-body "${API_BASE_URL}/v1/chat/completions" \
   -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -103,8 +102,8 @@ Content-Type: application/json
 
 ```bash
 # 1. 创建视频任务
-curl -X POST "https://ai.moyinai.com/api/v1/videos" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/videos" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "sora-2",
@@ -115,16 +114,16 @@ curl -X POST "https://ai.moyinai.com/api/v1/videos" \
   }'
 
 # 2. 查询视频任务
-curl -X GET "https://ai.moyinai.com/api/v1/videos/task_xxx" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X GET "${API_BASE_URL}/v1/videos/task_xxx" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 ## 图片完整流程
 
 ```bash
 # 1. 创建图片任务
-curl -X POST "https://ai.moyinai.com/api/v1/images" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "${API_BASE_URL}/v1/images" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image2",
@@ -134,8 +133,8 @@ curl -X POST "https://ai.moyinai.com/api/v1/images" \
   }'
 
 # 2. 查询图片任务
-curl -X GET "https://ai.moyinai.com/api/v1/images/task_xxx" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X GET "${API_BASE_URL}/v1/images/task_xxx" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 创建成功返回的是任务对象，保存其中的 `id` 替换示例中的 `task_xxx`。查询得到 `completed` 才读取图片 `url` 或视频 `video_url`；`failed` 是任务失败，需要检查 `error`。[接口总览](/api-overview) 说明不同接口的响应结构，[错误处理](/errors) 列出常见问题的定位步骤。

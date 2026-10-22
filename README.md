@@ -60,7 +60,9 @@ mint broken-links
 
 `openapi.json` 维护客户 API 的请求、响应和认证结构。`API 参考` 页面通过 `openapi: "openapi.json METHOD /path"` 绑定接口，在保留正文的同时展示 Mintlify 交互式调试区。
 
-当前包含 28 个客户接口，覆盖账户与模型、素材上传删除、对话协议、图片和视频任务、OpenAI 图片批次、Responses 资源和 Token 统计。API 服务通过 OpenAPI 服务器变量 `{baseUrl}` 配置，默认为 `https://ai.moyinai.com/api`。每个客户可在调试区 Server 中填写完整 API 根地址，包含协议、域名、可选端口和 Nginx 对外路径前缀，也支持根路径部署。浏览器跨接口记住该值，新增客户或调整代理前缀无需重新发布文档。地址末尾不加 `/`；接口路径中已包含 `/v1` 或 `/v1beta`，避免重复拼接版本前缀。线上调试使用 Mintlify 代理可访问的公网服务地址。
+当前包含 28 个客户接口，覆盖账户与模型、素材上传删除、对话协议、图片和视频任务、OpenAI 图片批次、Responses 资源和 Token 统计。API 服务通过 OpenAPI 服务器变量 `{baseUrl}` 配置，预填根地址只在 `openapi.json` 的 `servers[0].variables.baseUrl.default` 中维护。每个客户可在调试区 Server 中填写完整 API 根地址，包含协议、域名、可选端口和 Nginx 对外路径前缀，也支持根路径部署。浏览器跨接口记住该值，新增客户或调整代理前缀无需重新发布文档。地址末尾不加 `/`；接口路径中已包含 `/v1` 或 `/v1beta`，避免重复拼接版本前缀。线上调试使用 Mintlify 代理可访问的公网服务地址。
+
+正文中的 cURL、SDK、Python 任务和 WebSocket 示例统一读取环境变量 `API_BASE_URL`，其含义与调试区 `baseUrl` 相同，均不含版本段。共用的连接说明位于 `snippets/api-connection.mdx`；正文命令自行追加协议对应的 `/v1` 或 `/v1beta`。浏览器和终端配置分别保存。更换服务域名或代理前缀时只更新连接配置；新增示例不要内嵌真实请求域名或假设固定 `/api` 前缀。SDK 版本路径和 Nginx 转发说明见对应指南。
 
 调试区使用 Mintlify API 代理，并提供 cURL、Python 和 JavaScript 示例。修改接口时同步维护 `openapi.json` 和对应 MDX 页面；不要直接发布包含后台接口的完整 Swagger 导出。
 

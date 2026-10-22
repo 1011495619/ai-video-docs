@@ -3,11 +3,15 @@ title: "WebSocket"
 description: "通过 WebSocket 使用 Responses 与 Realtime。"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 Responses 使用 `GET /v1/responses` WebSocket，Realtime 使用 `GET /v1/realtime?model=YOUR_MODEL` WebSocket。浏览器不能设置 Authorization 时，可使用 `openai-insecure-api-key.YOUR_API_KEY` 子协议完成升级鉴权。连接具备心跳、背压、消息大小和时限控制；Realtime 支持 session、音频、工具调用、VAD 和多轮响应。
 
 ## 连接地址和模型
 
-HTTP Base URL `https://ai.moyinai.com/api/v1` 对应 WebSocket 根地址 `wss://api.example.com/api/v1`。选择目录中支持对应操作及 `websocket` 传输的模型，并确认代理传递升级头。
+从 `API_BASE_URL` 保留域名、端口和完整代理前缀，追加 `/v1/responses` 或 `/v1/realtime`，再将 `https:` 转换为 `wss:`、`http:` 转换为 `ws:`。例如根地址 `https://api.customer.example/gateway` 对应 Responses 地址 `wss://api.customer.example/gateway/v1/responses`。选择目录中支持对应操作及 `websocket` 传输的模型，并确认代理传递升级头。
 
 建议在后端使用能设置请求头的 WebSocket 客户端，API Key保留在服务端。浏览器连接通常需要业务后端中转，避免长期密钥暴露在用户页面。
 
@@ -22,7 +26,7 @@ const base = process.env.API_BASE_URL;
 const key = process.env.PLATFORM_API_KEY;
 const model = process.env.CONVERSATION_MODEL;
 if (!base || !key || !model) throw new Error("Set API_BASE_URL, PLATFORM_API_KEY, CONVERSATION_MODEL");
-const url = new URL(`${base.replace(/\/$/, "")}/responses`);
+const url = new URL(`${base.replace(/\/+$/, "")}/v1/responses`);
 url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
 const socket = new WebSocket(url, { headers: { Authorization: `Bearer ${key}` } });
 let terminal = false;

@@ -1,0 +1,13 @@
+<Note>
+  **先设置 API 根地址与密钥**
+  将 `YOUR_API_BASE_URL` 替换为客户 API 对外的完整根地址，包含协议、域名、可选端口和 Nginx 路径前缀，末尾不加 `/`，也不包含 `/v1` 或 `/v1beta`。根路径、`/api`、`/gateway` 和多层前缀均按实际部署填写。
+
+```bash
+export API_BASE_URL="YOUR_API_BASE_URL"
+export PLATFORM_API_KEY="YOUR_API_KEY"
+```
+
+  同一终端只需设置一次，后续命令、Python 和 Node.js 示例共用这两个环境变量。正文示例会追加接口的 `/v1` 或 `/v1beta` 路径。
+
+  在线调试时，在 **Try it → Server → baseUrl** 填写同一个根地址；浏览器设置和终端环境变量分别保存。详细说明见[快速开始](/quickstart)。
+</Note>

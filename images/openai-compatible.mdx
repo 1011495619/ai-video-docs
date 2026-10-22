@@ -3,6 +3,10 @@ title: "OpenAI 图片兼容接口"
 description: "通过标准 generations、edits 获取图片，或提交异步批次后轮询结果。"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 这些接口使用平台图片模型和 API Key，便于接入 OpenAI SDK。与 [POST /v1/images](/images/create) 的单个异步任务相比，兼容接口支持 `n` 张图片并使用 OpenAI 图片响应结构。
 
 ## 选择同步或异步
@@ -20,8 +24,8 @@ description: "通过标准 generations、edits 获取图片，或提交异步批
 ## 文生图
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/images/generations" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/images/generations" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "YOUR_IMAGE_MODEL",
@@ -64,8 +68,8 @@ curl "https://ai.moyinai.com/api/v1/images/generations" \
 本地文件使用 multipart，客户端自动生成 Content-Type 和 boundary：
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/images/edits" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/images/edits" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -F "model=YOUR_IMAGE_MODEL" \
   -F "prompt=保留主体，把背景替换为浅灰色摄影棚" \
   -F "n=1" \
@@ -78,8 +82,8 @@ curl "https://ai.moyinai.com/api/v1/images/edits" \
 也可使用 JSON 的 HTTP(S) URL；此兼容编辑入口另外接受 `data:image/png;base64,...` 等图片 Data URL。
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/images/edits" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/images/edits" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model":"YOUR_IMAGE_MODEL",
@@ -95,8 +99,8 @@ curl "https://ai.moyinai.com/api/v1/images/edits" \
 ## 异步批次
 
 ```bash
-curl -i "https://ai.moyinai.com/api/v1/images/generations/async" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -i "${API_BASE_URL}/v1/images/generations/async" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_IMAGE_MODEL","prompt":"一张极简产品海报","n":2,"response_format":"url"}'
 ```
@@ -110,16 +114,15 @@ curl -i "https://ai.moyinai.com/api/v1/images/generations/async" \
   "object": "image.generation.task",
   "status": "processing",
   "created_at": 1776843503,
-  "expires_at": 1776929903,
-  "poll_url": "/api/v1/images/tasks/IMAGE_REQUEST_UUID"
+  "expires_at": 1776929903
 }
 ```
 
-使用实际返回的批次 ID 查询：
+上面省略了响应中的 `poll_url` 字段，其值与后端收到的请求路径有关。Nginx 重写前缀时，`poll_url` 和 `Location` 可能仍包含后端路径；客户端统一使用自己的 `API_BASE_URL` 与实际批次 ID 拼接查询地址：
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/images/tasks/IMAGE_REQUEST_UUID" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl "${API_BASE_URL}/v1/images/tasks/IMAGE_REQUEST_UUID" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 | 状态 | 处理 |

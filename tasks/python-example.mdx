@@ -3,16 +3,18 @@ title: "Python 完整任务流程"
 description: "创建一次图片或视频任务，保存 ID，并在总时限内轮询、处理限频和读取结果。"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 此示例调用 `/v1/images` 或 `/v1/videos` 单任务接口。创建只提交一次；查询遇到临时故障时退避，任务失败或等待超时会明确报错。OpenAI 图片批次应使用其[批次查询协议](/images/openai-compatible)。
 
 ## 准备
 
-安装 `requests`，并设置工作台地址、密钥和所选模型：
+先按本页连接配置设置 `API_BASE_URL` 和 `PLATFORM_API_KEY`；根地址不含版本段。然后安装 `requests` 并设置所选模型：
 
 ```bash
 pip install requests
-export API_BASE_URL="https://ai.moyinai.com/api/v1"
-export PLATFORM_API_KEY="YOUR_API_KEY"
 export GENERATION_MODEL="YOUR_IMAGE_MODEL"
 export GENERATION_KIND="images"
 ```
@@ -32,7 +34,7 @@ from urllib.parse import quote
 
 import requests
 
-BASE = os.environ["API_BASE_URL"].rstrip("/")
+BASE = os.environ["API_BASE_URL"].rstrip("/") + "/v1"
 KEY = os.environ["PLATFORM_API_KEY"]
 MODEL = os.environ["GENERATION_MODEL"]
 KIND = os.environ.get("GENERATION_KIND", "images")

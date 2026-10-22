@@ -12,7 +12,7 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
     在你所属站点的 API 工作台创建密钥。不同客户可以共用这份文档，各自使用所属站点的 API 地址和密钥。
   </Step>
   <Step title="填写客户 API 根地址">
-    打开接口的 **Try it** 调试区，在 **Server** 中修改 `baseUrl`。默认值为 `https://ai.moyinai.com/api`；其他客户填写自己的完整 API 根地址，包含协议、域名、可选端口和对外路径前缀。
+    打开接口的 **Try it** 调试区，在 **Server** 中修改 `baseUrl`，填写 API Key 所属客户的完整 API 根地址，包含协议、域名、可选端口和对外路径前缀。预填值只是默认配置，使用前先核对所属站点。
 
     例如 `https://api.customer.com/gateway` 或 `https://api.customer.com`。末尾不加 `/`，也不包含 `/v1`、`/v1beta` 或具体接口路径；调试区自动拼接当前接口路径。浏览器会记住所填地址，并在其他接口中继续使用；切换客户时核对地址和 API Key。
   </Step>
@@ -49,6 +49,8 @@ description: "填写自己的 API Key，编辑参数并直接查看 API 的真�
 填写 Nginx 对外暴露的地址，代理负责将请求转发到后端对应接口；新增客户或调整代理前缀无需修改或重新发布文档。线上调试需使用 Mintlify 代理可访问的公网服务地址。
 
 文档站的域名和 API 服务地址分别配置。共享文档站不会自动识别客户所属站点，第一次调试时按 API 工作台提供的地址填写 `baseUrl`。
+
+正文的 cURL、Python 和 JavaScript 示例统一从终端环境变量 `API_BASE_URL` 读取同一个完整根地址，再追加接口路径。浏览器里的 `baseUrl` 与终端环境变量分别保存；设置方式见[快速开始](/quickstart)。
 
 ## 选择接口
 

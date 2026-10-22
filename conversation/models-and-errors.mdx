@@ -4,13 +4,17 @@ description: "对话模型的标准列表接口和错误返回约定。"
 openapi: "openapi.json GET /v1/models"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 OpenAI SDK 使用 `GET /v1/models`；Anthropic SDK 使用相同入口并携带 `anthropic-version`；Gemini SDK 使用 `GET /v1beta/models`。错误按对应协议返回，不使用旧图片/视频接口的业务信封。流式连接建立前返回 JSON 错误，建立后使用协议事件发送错误。
 
 ## OpenAI 模型列表
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/models" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl "${API_BASE_URL}/v1/models" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 ```json
@@ -48,12 +52,12 @@ curl "https://ai.moyinai.com/api/v1/models" \
 ## Anthropic 和 Gemini 列表
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/models" \
-  -H "X-API-Key: YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/models" \
+  -H "X-API-Key: $PLATFORM_API_KEY" \
   -H "anthropic-version: 2023-06-01"
 
-curl "https://ai.moyinai.com/api/v1beta/models" \
-  -H "x-goog-api-key: YOUR_API_KEY"
+curl "${API_BASE_URL}/v1beta/models" \
+  -H "x-goog-api-key: $PLATFORM_API_KEY"
 ```
 
 Messages 列表从 `data[].id` 读取模型名，模型项 `created_at` 是 ISO 日期。Gemini 列表从 `models[].baseModelId` 或 `name` 读取，能力使用 `supportedGenerationMethods`、`supportedOperations`、`outputTokenLimit` 等字段。

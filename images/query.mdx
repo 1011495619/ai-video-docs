@@ -4,6 +4,10 @@ description: "读取图片任务进度、结果与错误信息。"
 openapi: "openapi.json GET /v1/images/{taskId}"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 接口：
 
 ```text
@@ -13,8 +17,8 @@ GET /v1/images/{taskId}
 ## 请求
 
 ```bash
-curl -X GET "https://ai.moyinai.com/api/v1/images/task_xxx" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X GET "${API_BASE_URL}/v1/images/task_xxx" \
+  -H "Authorization: Bearer $PLATFORM_API_KEY"
 ```
 
 ## 处理中响应

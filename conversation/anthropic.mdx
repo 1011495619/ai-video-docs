@@ -4,13 +4,17 @@ description: "配置版本头，使用 Messages 对话、流式文本和 Token �
 openapi: "openapi.json POST /v1/messages"
 ---
 
+import ApiConnection from "../snippets/api-connection.mdx";
+
+<ApiConnection />
+
 ## 发起请求
 
 模型列表请求 `GET /v1/models` 时带 `anthropic-version` 可取得 Messages 格式的可用模型。选择支持 `messages` 的公开模型 ID。
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/messages" \
-  -H "X-API-Key: YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/messages" \
+  -H "X-API-Key: $PLATFORM_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
   -d '{
@@ -53,8 +57,8 @@ Messages 的系统指令放在顶层 `system`。Chat 的 `role: "system"` 消息
 ## 流式消息
 
 ```bash
-curl -N "https://ai.moyinai.com/api/v1/messages" \
-  -H "X-API-Key: YOUR_API_KEY" \
+curl -N "${API_BASE_URL}/v1/messages" \
+  -H "X-API-Key: $PLATFORM_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_MESSAGES_MODEL","max_tokens":512,"messages":[{"role":"user","content":"你好"}],"stream":true}'
@@ -82,8 +86,8 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
 先检查模型支持 `messagesCountTokens`：
 
 ```bash
-curl "https://ai.moyinai.com/api/v1/messages/count_tokens" \
-  -H "X-API-Key: YOUR_API_KEY" \
+curl "${API_BASE_URL}/v1/messages/count_tokens" \
+  -H "X-API-Key: $PLATFORM_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
   -d '{"model":"YOUR_MESSAGES_MODEL","messages":[{"role":"user","content":"你好"}]}'
