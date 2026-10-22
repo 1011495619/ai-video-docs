@@ -66,4 +66,17 @@ mint broken-links
 
 调试区使用 Mintlify API 代理，并提供 cURL、Python 和 JavaScript 示例。修改接口时同步维护 `openapi.json` 和对应 MDX 页面；不要直接发布包含后台接口的完整 Swagger 导出。
 
+## Markdown 接口文档
+
+`exports/customer-api-reference.md` 是可独立阅读和分发的 Markdown 接口参考，包含 `openapi.json` 中的全部客户 HTTP 接口、参数约束、鉴权、cURL 示例、响应状态和数据结构。请求示例统一使用 `API_BASE_URL`；不依赖 Mintlify 页面组件。在线入口位于“在线调试 API”页面。
+
+修改 `openapi.json` 后，使用 Python 3.9 或更高版本重新生成并检查导出是否同步：
+
+```bash
+python3 scripts/export-api-markdown.py
+python3 scripts/export-api-markdown.py --check
+```
+
+该脚本仅使用 Python 标准库；导出内容从 OpenAPI 生成，统一修改接口定义后再生成此文件。
+
 官方说明：[GitHub 部署](https://www.mintlify.com/docs/deploy/github)、[自定义域名](https://www.mintlify.com/docs/customize/custom-domain)、[子路径部署](https://www.mintlify.com/docs/deploy/docs-subpath)。
